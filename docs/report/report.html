@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DeTour: Problem Understanding, Solution Proposal and System Architecture Report</title>
+<style>
+@font-face { font-family: 'Archivo'; src: url('fonts/archivo-latin-wdth-normal.woff2') format('woff2'); font-weight: 100 900; font-stretch: 62% 125%; }
+:root {
+  --ink: #14203a; --ink2: #44506b; --ink3: #6b7790; --line: #d6dce5; --line2: #e9edf2; --paper: #f4f6f8;
+  --blue: #0067a3; --orange: #c4510a; --green: #007a5a; --plum: #9a4b82; --gold: #8a6d00;
+  --kept: #2b6446; --kept-bg: #e3f0e8; --moved: #84560a; --moved-bg: #faefd6; --broken: #a3201a; --broken-bg: #fae4e1;
+}
+@page { size: A4; margin: 17mm 17mm 20mm 17mm;
+  @bottom-left { content: 'DeTour  |  VORTEXA 3.0  |  S-01 ReRoute'; font: 8pt 'Archivo', sans-serif; color: #6b7790; }
+  @bottom-right { content: counter(page); font: 8pt 'Archivo', sans-serif; color: #6b7790; } }
+@page :first { margin: 0; @bottom-left { content: none; } @bottom-right { content: none; } }
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; font-family: 'Archivo', sans-serif; font-size: 9.6pt; line-height: 1.5; color: var(--ink); font-variant-numeric: tabular-nums; }
+h1, h2, h3 { margin: 0; font-stretch: 78%; font-weight: 750; letter-spacing: 0; color: var(--ink); }
+h2 { font-size: 17pt; margin: 22pt 0 7pt; padding-top: 8pt; border-top: 1.5pt solid var(--ink); break-after: avoid; }
+h3 { font-size: 11.5pt; margin: 13pt 0 4pt; break-after: avoid; }
+p { margin: 0 0 6pt; max-width: 74ch; }
+ul, ol { margin: 0 0 7pt; padding-left: 15pt; max-width: 76ch; }
+li { margin: 0 0 2.5pt; }
+b, strong { font-weight: 650; }
+.muted { color: var(--ink2); }
+.small { font-size: 8.4pt; }
+table.split { break-inside: auto; }
+table.split tr { break-inside: avoid; }
+table { width: 100%; border-collapse: collapse; margin: 5pt 0 9pt; font-size: 8.7pt; line-height: 1.38; break-inside: avoid; }
+th { text-align: left; font-weight: 650; font-stretch: 90%; padding: 4pt 7pt 4pt 0; border-bottom: 1.2pt solid var(--ink); vertical-align: bottom; }
+td { padding: 4.5pt 7pt 4.5pt 0; border-bottom: 0.6pt solid var(--line); vertical-align: top; }
+td:first-child { font-weight: 600; }
+.r { text-align: right; }
+figure { margin: 9pt 0 10pt; break-inside: avoid; }
+figcaption { font-size: 8.3pt; color: var(--ink2); margin-top: 3pt; max-width: 80ch; }
+svg text { font-family: 'Archivo', sans-serif; }
+.chip { display: inline-block; padding: 0.5pt 6pt; border-radius: 9pt; font-weight: 600; font-size: 8pt; }
+.kept { color: var(--kept); background: var(--kept-bg); } .moved { color: var(--moved); background: var(--moved-bg); } .broken { color: var(--broken); background: var(--broken-bg); }
+.quote { border-left: 2.5pt solid var(--line); padding: 1pt 0 1pt 9pt; margin: 4pt 0 8pt; color: var(--ink2); font-size: 9pt; max-width: 76ch; }
+.note { background: var(--paper); border-radius: 4pt; padding: 7pt 10pt; margin: 6pt 0 9pt; font-size: 9pt; break-inside: avoid; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18pt; }
+.lead { font-size: 10.6pt; line-height: 1.5; max-width: 70ch; }
+
+/* cover */
+.cover { height: 297mm; padding: 22mm 20mm 18mm; display: flex; flex-direction: column; page-break-after: always; position: relative; }
+.cover .kicker { font-size: 9.5pt; font-weight: 600; color: var(--ink2); }
+.cover h1 { font-size: 66pt; line-height: 0.95; margin: 10mm 0 5mm; font-stretch: 72%; font-weight: 800; letter-spacing: -0.01em; }
+.cover .tag { font-size: 15pt; line-height: 1.3; font-stretch: 85%; max-width: 135mm; font-weight: 500; }
+.cover .art { margin: 12mm -20mm 0; }
+.cover .foot { margin-top: auto; }
+.cover table { font-size: 9.4pt; max-width: 150mm; }
+.cover td:first-child { width: 36mm; color: var(--ink2); font-weight: 500; }
+.blank { color: #a3201a; background: #fae4e1; padding: 0 6pt; border-radius: 3pt; font-size: 8.6pt; }
+.cover .summary { font-size: 9.4pt; max-width: 150mm; color: var(--ink2); margin-top: 2mm; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================== COVER -->
+<section class="cover">
+  <div class="kicker">VORTEXA 3.0 &nbsp;|&nbsp; Problem Understanding, Solution Proposal &amp; System Architecture Report</div>
+  <h1>DeTour</h1>
+  <div class="tag">Replans a delivery fleet from where it actually is, and arranges a rescue with a person in charge.</div>
+
+  <div class="art">
+    <svg viewBox="0 0 794 150" width="100%" height="190" preserveAspectRatio="none" aria-hidden="true">
+      <rect width="794" height="150" fill="#f4f6f8"/>
+      <g stroke="#e3e8ee" stroke-width="1"><line x1="170" y1="0" x2="170" y2="150"/><line x1="320" y1="0" x2="320" y2="150"/><line x1="470" y1="0" x2="470" y2="150"/><line x1="620" y1="0" x2="620" y2="150"/></g>
+      <!-- the past, shaded, and the present -->
+      <rect x="0" y="0" width="335" height="150" fill="#14203a" opacity="0.04"/>
+      <line x1="335" y1="0" x2="335" y2="150" stroke="#b3261e" stroke-width="2"/>
+      <!-- lanes -->
+      <g stroke-linecap="round">
+        <line x1="40" y1="24" x2="760" y2="24" stroke="#0067a3" stroke-width="3" opacity="0.8"/><rect x="190" y="14" width="22" height="20" rx="3" fill="#0067a3"/><rect x="640" y="14" width="22" height="20" rx="3" fill="#0067a3"/>
+        <line x1="40" y1="55" x2="335" y2="55" stroke="#c4510a" stroke-width="3"/><rect x="150" y="45" width="22" height="20" rx="3" fill="#c4510a"/>
+        <rect x="402" y="45" width="22" height="20" rx="3" fill="none" stroke="#6b7790" stroke-dasharray="4 3" stroke-width="1.5"/><rect x="470" y="45" width="22" height="20" rx="3" fill="none" stroke="#6b7790" stroke-dasharray="4 3" stroke-width="1.5"/><rect x="545" y="45" width="22" height="20" rx="3" fill="none" stroke="#6b7790" stroke-dasharray="4 3" stroke-width="1.5"/>
+        <line x1="40" y1="86" x2="760" y2="86" stroke="#007a5a" stroke-width="3" opacity="0.8"/><rect x="215" y="76" width="22" height="20" rx="3" fill="#007a5a"/><rect x="650" y="76" width="22" height="20" rx="3" fill="#007a5a"/>
+        <line x1="40" y1="117" x2="760" y2="117" stroke="#9a4b82" stroke-width="3" opacity="0.8"/><rect x="190" y="107" width="22" height="20" rx="3" fill="#9a4b82"/>
+        <rect x="360" y="107" width="22" height="20" rx="3" fill="#fff" stroke="#9a4b82" stroke-width="2"/><rect x="450" y="107" width="22" height="20" rx="3" fill="#9a4b82"/><rect x="525" y="107" width="22" height="20" rx="3" fill="#9a4b82"/><rect x="665" y="107" width="22" height="20" rx="3" fill="#9a4b82"/>
+      </g>
+      <rect x="336" y="38" width="458" height="34" fill="#a3201a" opacity="0.1"/>
+      <g stroke="#a3201a" stroke-width="3" stroke-linecap="round"><line x1="327" y1="47" x2="345" y2="63"/><line x1="345" y1="47" x2="327" y2="63"/></g>
+    </svg>
+  </div>
+
+  <div class="foot">
+  <table>
+    <tr><td>Team ID</td><td><span class="blank" id="team-id">to be filled in</span></td></tr>
+    <tr><td>Team name</td><td><span class="blank" id="team-name">to be filled in</span></td></tr>
+    <tr><td>Problem statement</td><td><b>S-01</b>, ReRoute: Dynamic Fleet &amp; Delivery Replanning</td></tr>
+    <tr><td>Domain</td><td>4, Supply Chain &amp; Optimization</td></tr>
+    <tr><td>Prototype</td><td>github.com/shreyaaassss/Detour</td></tr>
+  </table>
+  <p class="summary">DeTour assigns deliveries to vehicles within capacity and time windows, then replans from the state of the day when a road slows, a vehicle fails or an urgent delivery arrives. Every change is checked by a separate validator and explained delivery by delivery. For a breakdown, a stranded driver reports by voice in their own language, the head of logistics approves a ranked shortlist, a nearby driver is offered the job in the app, and if they do not answer within 60 seconds an automated phone agent calls them.</p>
+  </div>
+</section>
+
+<!-- ============================================================== 1 PROBLEM -->
+<h2 style="border-top:none; margin-top:0; padding-top:0">1. Problem understanding</h2>
+
+<h3>1.1 The situation</h3>
+<p>Each morning a dispatcher decides which vehicle carries which deliveries, and in what order. Vehicles have capacities, deliveries have sizes and time windows, and travel times vary. The plan rarely survives the day: a bridge closes, a vehicle breaks down, an urgent delivery arrives. Today the dispatcher reacts with a spreadsheet and experience. An unchecked change can overload a vehicle, miss a window, or undo a stop that was already completed. And someone must decide what to tell each affected customer.</p>
+
+<h3>1.2 What problem S-01 asks for, and how we read it</h3>
+<table>
+  <tr><th style="width:44%">The problem statement requires</th><th>Our reading</th></tr>
+  <tr><td>Assign deliveries to vehicles within capacity and time windows, with an explainable algorithm whose limits are stated. Show arrival times, including waiting.</td><td>A valid plan with arrival, wait, service start, departure and load at every stop. The heuristic and its limits are stated in the interface.</td></tr>
+  <tr><td>Never overload a vehicle at any point. Report an unplaceable delivery with the reason.</td><td>Capacity is checked at every stop, including pickups. Every undeliverable parcel carries a specific reason.</td></tr>
+  <tr><td>Three disruptions: a road closure for a stated period, a vehicle failure at a stated time, an urgent delivery added mid-day. Structured or described in text.</td><td>All three are supported, entered as a form or described in free text. A driver can also report a breakdown by voice. Text and voice are interpreted into the same structures.</td></tr>
+  <tr><td>A dispatcher must confirm interpreted text before it takes effect. An unknown location is rejected, not guessed.</td><td>Interpretation only ever produces a preview. A place that is not on the known list is refused, and the refusal is logged.</td></tr>
+  <tr><td>Replan from the current state: completed stops stay fixed, and a failed vehicle receives no stops after its failure time.</td><td>The state of every vehicle at time T is rebuilt. Completed stops are frozen, and a separate validator checks the result.</td></tr>
+  <tr><td>Show original and revised plans side by side, each delivery kept, moved or broken, with a reason.</td><td>A comparison view with a plain-language reason for every delivery, written so it can go into a customer message.</td></tr>
+</table>
+<p class="small muted">The booklet's common rules also apply: a working MVP that judges can test live, reproducible inputs, meaningful AI, explicit checkable rules where decisions have consequences, fictional data only, and a core that does not depend on external services.</p>
+
+<h3>1.3 What makes it hard</h3>
+<p><b>A replan starts mid-day.</b> It is not a fresh plan. Completed stops cannot change, a stop may be in progress, and a vehicle may be part-way along a leg. A tool that re-solves from scratch can produce a plan that undoes the morning.</p>
+<p><b>Parcels are physical.</b> A parcel already loaded on a running vehicle cannot simply be handed to another vehicle on paper. Modelling that honestly changes what a replan is allowed to do.</p>
+<p><b>A breakdown strands parcels, and someone has to agree to fetch them.</b> The rescue needs a pickup at the breakdown site and a handover, and the rescuer's own deliveries must still meet their windows. This is a decision involving several people under time pressure, not only a calculation.</p>
+<p><b>Words are unreliable.</b> A report may be typed or spoken, in Hindi, Marathi or English, and may name a place the system does not know. Guessing would put a vehicle in the wrong place.</p>
+<p><b>The dispatcher has to explain.</b> A new plan is not enough. For every delivery they need to know whether it kept its slot, moved, or cannot be made, and why.</p>
+
+<!-- ============================================================== 2 SOLUTION -->
+<h2>2. Proposed solution</h2>
+<p class="lead">DeTour is a deterministic planning engine surrounded by people and AI that help it, never the other way round. The engine decides assignment, feasibility and timing. AI reads and speaks. People approve anything with consequences.</p>
+
+<h3>2.1 Four design principles</h3>
+<ul>
+  <li><b>The engine decides, AI assists.</b> Assignment, timing and every ETA come from code that follows explicit rules. AI transcribes, extracts, speaks and calls. It never assigns anything.</li>
+  <li><b>Hard constraints never relax.</b> Capacity, time windows, shift end, closures and frozen stops hold in every plan and every fallback.</li>
+  <li><b>Humans approve consequential actions.</b> The head approves an exact shortlist of drivers for an exact version of the plan. If the plan changes afterwards, the approval is void.</li>
+  <li><b>Degrade gracefully, and record everything.</b> Every voice or AI step has a typed or button fallback, and every action, refusal, timeout and escalation goes into a tamper-evident audit log.</li>
+</ul>
+
+<h3>2.2 The planning engine</h3>
+<p>The plan is built by <b>cheapest insertion followed by local search</b> (relocate, swap, 2-opt). The objective is compared in order: fewest undeliverable parcels, then fewest moved, then least driving time. Travel is time-dependent: a closure lengthens a leg only if the vehicle departs inside the closure period. At every stop the plan records arrival, wait, service start, departure and load.</p>
+<p>A vehicle that would arrive early waits at the customer, and the wait is shown. If the wait would exceed 20 minutes it holds back where it is instead, so it is not stranded at a customer and stays available. A parcel that cannot be placed gets one of four specific reasons (too big for any vehicle, window closes before anyone can arrive, every vehicle full, or it would make another delivery late).</p>
+<p class="small muted"><b>Limits, stated in the interface:</b> the method is a heuristic and not provably optimal; travel times come from a simulated matrix; return to the depot is not counted in driving time; local search stops at a local optimum.</p>
+
+<h3>2.3 Replanning from the current state</h3>
+<ul>
+  <li><b>What is frozen at time T:</b> completed stops, the stop in progress, and the next stop of a vehicle that is mid-leg (it cannot be redirected before it arrives).</li>
+  <li><b>A failed vehicle</b> receives no stops after its failure time. Its remaining parcels are collected from the breakdown site, with a modelled 5-minute handover that is shared when one rescuer takes several parcels.</li>
+  <li><b>Parcels aboard a running vehicle stay on it</b>: delivered by it, or reported broken. Only a failed vehicle's parcels and newly added urgent parcels can change vehicle.</li>
+  <li><b>A closure</b> affects only legs that depart after it is reported. It cannot rewrite history.</li>
+  <li><b>An urgent delivery</b> is collected from the depot (or a stated place), so a vehicle that has left must come back for it. If it cannot be placed, the reason is given.</li>
+</ul>
+
+<h3>2.4 An independent validator</h3>
+<p>A separate module re-times every route from scratch and checks the result. It works on plain data and imports nothing from the planner (an automated test enforces this), so it cannot repeat the planner's mistakes. It checks that every delivery appears exactly once, arrival and departure times match a recomputation, closures are applied, windows are met, load never exceeds capacity or goes negative, vehicles finish within their shift, pickups come before their deliveries, frozen stops are unchanged, and a failed vehicle has nothing after its failure time. <b>A plan that fails is never shown as valid, and a rescue that fails is never committed.</b></p>
+
+<h3>2.5 Explaining every change</h3>
+<p>Each delivery in the revised plan is classified, with a reason:</p>
+<p><span class="chip kept">Kept</span> same vehicle, window still met; any shift in time is shown. &nbsp;<span class="chip moved">Moved</span> a different vehicle, or the time shifts by 15 minutes or more, or the visiting order changes. &nbsp;<span class="chip broken">Broken</span> cannot be delivered within its window, or at all.</p>
+<div class="quote"><b>Moved.</b> Moved from V2 (Ravi) to V4 (Meera): V2 broke down at Hadapsar at 14:05. V4 collects the parcel there and delivers at 14:50 (window 14:00-15:00).<br><b>Broken.</b> Cannot be delivered within its window (14:30-14:55): window closes at 14:55 but the earliest any vehicle can arrive is 14:57.</div>
+<p>From the same facts the system drafts a customer message for each affected delivery. The dispatcher approves it. Drafts are filled in from the plan, contain no internal ids or driver names, and are never sent automatically.</p>
+
+<h3>2.6 The breakdown rescue flow</h3>
+<p>This is the feature that turns a replanning engine into a working emergency procedure. It needs several people to act within minutes, and each step is checked.</p>
+
+<figure>
+<svg viewBox="0 0 700 218" width="100%" role="img" aria-label="The rescue flow in seven steps">
+  <defs><marker id="a2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#14203a"/></marker></defs>
+  <g font-size="10.5" fill="#14203a">
+    <!-- row 1 -->
+    <g><rect x="2" y="6" width="156" height="92" rx="6" fill="#fff" stroke="#14203a"/><text x="12" y="25" font-weight="700" font-size="11">1  Driver reports</text><text x="12" y="42" fill="#44506b">Speaks or types, in Hindi,</text><text x="12" y="55" fill="#44506b">Marathi or English. The app</text><text x="12" y="68" fill="#44506b">reads it back. An unknown</text><text x="12" y="81" fill="#44506b">place is rejected.</text></g>
+    <g><rect x="182" y="6" width="156" height="92" rx="6" fill="#fff" stroke="#14203a"/><text x="192" y="25" font-weight="700" font-size="11">2  Engine ranks rescuers</text><text x="192" y="42" fill="#44506b">Each driver is tried in a real</text><text x="192" y="55" fill="#44506b">replan, then validated. The</text><text x="192" y="68" fill="#44506b">plan itself does not change</text><text x="192" y="81" fill="#44506b">yet.</text></g>
+    <g><rect x="362" y="6" width="156" height="92" rx="6" fill="#fff" stroke="#14203a"/><text x="372" y="25" font-weight="700" font-size="11">3  Head approves</text><text x="372" y="42" fill="#44506b">Up to three drivers, in order,</text><text x="372" y="55" fill="#44506b">for this plan version. No answer</text><text x="372" y="68" fill="#44506b">in 120 s goes to the backup</text><text x="372" y="81" fill="#44506b">approver.</text></g>
+    <g><rect x="542" y="6" width="156" height="92" rx="6" fill="#fff" stroke="#14203a"/><text x="552" y="25" font-weight="700" font-size="11">4  Offer in the app</text><text x="552" y="42" fill="#44506b">Spoken and on screen, with a</text><text x="552" y="55" fill="#44506b">visible 60-second countdown</text><text x="552" y="68" fill="#44506b">and Accept or Decline.</text></g>
+    <!-- row 2 -->
+    <g><rect x="542" y="120" width="156" height="92" rx="6" fill="#fff" stroke="#14203a"/><text x="552" y="139" font-weight="700" font-size="11">5  Automated call</text><text x="552" y="156" fill="#44506b">At 60 s an AI agent rings the</text><text x="552" y="169" fill="#44506b">driver in Hindi. Say confirm or</text><text x="552" y="182" fill="#44506b">press 1; say no or press 2.</text><text x="552" y="195" fill="#44506b">Unclear twice means no.</text></g>
+    <g><rect x="362" y="120" width="156" height="92" rx="6" fill="#fff" stroke="#14203a"/><text x="372" y="139" font-weight="700" font-size="11">6  One claim wins</text><text x="372" y="156" fill="#44506b">The first acceptance is the</text><text x="372" y="169" fill="#44506b">only one. A late tap or call is</text><text x="372" y="182" fill="#44506b">refused and logged. The</text><text x="372" y="195" fill="#44506b">answer is re-validated.</text></g>
+    <g><rect x="182" y="120" width="156" height="92" rx="6" fill="#e3f0e8" stroke="#2b6446"/><text x="192" y="139" font-weight="700" font-size="11">7  Commit, then tell</text><text x="192" y="156" fill="#14203a">The plan is updated. Only now</text><text x="192" y="169" fill="#14203a">does the stranded driver hear</text><text x="192" y="182" fill="#14203a">"Meera is on the way, ETA</text><text x="192" y="195" fill="#14203a">14:15."</text></g>
+    <g><rect x="2" y="120" width="156" height="92" rx="6" fill="#faefd6" stroke="#84560a"/><text x="12" y="139" font-weight="700" font-size="11">If a driver declines</text><text x="12" y="156" fill="#14203a">or does not answer, the next</text><text x="12" y="169" fill="#14203a">approved driver gets the same</text><text x="12" y="182" fill="#14203a">offer. If nobody accepts, the</text><text x="12" y="195" fill="#14203a">parcel is marked undeliverable.</text></g>
+  </g>
+  <g stroke="#14203a" stroke-width="1.5" fill="none" marker-end="url(#a2)">
+    <line x1="160" y1="52" x2="180" y2="52"/><line x1="340" y1="52" x2="360" y2="52"/><line x1="520" y1="52" x2="540" y2="52"/>
+    <line x1="620" y1="99" x2="620" y2="118"/>
+    <line x1="540" y1="166" x2="520" y2="166"/><line x1="360" y1="166" x2="340" y2="166"/>
+  </g>
+  
+</svg>
+<figcaption>Figure 1. The rescue flow. Steps 1 to 4 change nothing in the plan. The plan changes only at step 7, after a driver has accepted and the result has been re-validated.</figcaption>
+</figure>
+
+<div style="break-inside:avoid">
+<h3>Worked example from the prototype</h3>
+<p>It is 14:05. Van V2 (driver Ravi) breaks down at Hadapsar carrying urgent medicine D7 for Kothrud Clinic, due by 15:00, plus D8 and D9. The engine tries each other driver as the rescuer:</p>
+<table>
+  <tr><th>Driver</th><th class="r">Reaches the van</th><th class="r">Leaves after handover</th><th class="r">Delivers D7</th><th>Result</th></tr>
+  <tr><td>Meera (V4)</td><td class="r">14:15</td><td class="r">14:20</td><td class="r">14:50</td><td>Feasible, rank 1</td></tr>
+  <tr><td>Sana (V3)</td><td class="r">14:20</td><td class="r">14:25</td><td class="r">14:55</td><td>Feasible, rank 2</td></tr>
+  <tr><td>Imran (V5)</td><td class="r">14:23</td><td class="r">14:28</td><td class="r">14:58</td><td>Feasible, rank 3</td></tr>
+  <tr><td>Arjun (V1)</td><td class="r">14:32</td><td class="r">14:37</td><td class="r">15:07</td><td>Not possible: misses the 15:00 window</td></tr>
+</table>
+</div>
+<p>The head approves Meera, Sana and Imran. Meera does not tap within 60 seconds, so the agent calls her; she says "confirm". The plan is re-validated and committed. D7 is delivered by V4 at 14:50, D8 moves to V4 as well, and D9 is broken: the earliest anyone could reach Baner is 14:57, two minutes after its window closes.</p>
+
+<h3>Rules the rescue flow enforces</h3>
+<ul>
+  <li><b>No early promises.</b> The stranded driver sees "request sent, awaiting approval" until the assignment is committed.</li>
+  <li><b>One claim only.</b> A tap and a call arriving together cannot both win. Closed offers refuse late answers, and the refusal is logged.</li>
+  <li><b>Re-validate on accept.</b> Time has passed, so feasibility is checked again before the plan changes. If it fails, the next driver is offered.</li>
+  <li><b>Approval binds to the shortlist and the plan version.</b> Any plan change voids it, closes open offers, tells drivers to stand down, and asks the head again with a fresh proposal.</li>
+  <li><b>No double-booking.</b> A driver with an open offer for one breakdown is shown as busy for another.</li>
+  <li><b>Honest failure.</b> If nobody accepts, the parcel is reported undeliverable. The engine does not assign it to someone who never agreed.</li>
+</ul>
+<table>
+  <tr><th>Timer</th><th>Value</th><th>If it runs out</th></tr>
+  <tr><td>Driver confirms the read-back</td><td>30 s</td><td>The report is re-prompted, then dropped after three tries</td></tr>
+  <tr><td>Head responds</td><td>120 s</td><td>The backup approver is asked, then the dispatcher is alerted</td></tr>
+  <tr><td>App offer</td><td><b>60 s</b></td><td>An automated call is placed</td></tr>
+  <tr><td>Call rings</td><td>25 s</td><td>Counts as declined; next driver</td></tr>
+  <tr><td>Call conversation</td><td>45 s</td><td>Counts as no response; next driver</td></tr>
+</table>
+
+<h3>2.7 A tamper-evident audit log</h3>
+<p>Every accepted change, refusal, approval, notification, call event, timeout and escalation is recorded with who did it and when. Each entry carries the hash of the one before it, so editing, deleting or reordering any entry is detectable. A log that fails verification is archived and never extended.</p>
+
+<!-- ============================================================== 3 USERS -->
+<h2>3. Intended users</h2>
+<p>DeTour is built for a small delivery fleet (the demonstration uses five vehicles and twelve deliveries) where one dispatcher plans the day and a head of logistics is responsible for emergencies. The demonstration scenario is a fictional city fleet carrying, among other parcels, urgent medicine for a clinic.</p>
+<table>
+  <tr><th style="width:22%">Role</th><th style="width:25%">Screen</th><th>What they do, and what they need</th></tr>
+  <tr><td>Dispatcher</td><td>Dispatcher console (laptop)</td><td>Loads the day, applies or describes disruptions, reviews the effect before applying it, compares original and revised plans, approves customer messages, and reads the audit log. Needs speed and trust: a change they can explain.</td></tr>
+  <tr><td>Stranded driver</td><td>Driver app (phone)</td><td>Reports a breakdown by voice or text in their own language, confirms a read-back, and is told what is happening. Needs something they can use roadside, in a language they speak, with no promise made that is not yet true.</td></tr>
+  <tr><td>Head of logistics, and a backup approver</td><td>Head console (phone or laptop)</td><td>Receives the alert, sees a ranked list of rescue drivers with times and the impact on other deliveries, and approves up to three. Needs to decide in seconds, with a backup if they cannot.</td></tr>
+  <tr><td>Rescue driver</td><td>Driver app and a phone call</td><td>Receives a spoken offer with a countdown, and is called if they do not answer. Needs a short, unambiguous request and an easy way to accept or decline.</td></tr>
+  <tr><td>Customers</td><td>Messages drafted by the system</td><td>Do not use the system directly. They receive an honest, specific message approved by the dispatcher.</td></tr>
+</table>
+
+<!-- ============================================================== 4 AI -->
+<h2>4. AI integration</h2>
+<p>AI is used where language and speech are the problem. It is not used where a rule or a calculation is the answer. Each use has a guardrail and a fallback, so no step depends on an external service.</p>
+<table class="split">
+  <tr><th style="width:18%">Task</th><th style="width:19%">Service</th><th>Guardrail</th><th style="width:20%">Fallback</th></tr>
+  <tr><td>Read a typed report into a disruption</td><td>OpenAI language model (optional)</td><td>Fills in a fixed form and nothing else. Every place must be on the known list <i>and</i> actually named in the text. Times and numbers it invents are flagged. A strict rule reader cross-checks it; if they disagree, the rule reader wins and the other reading is shown. The dispatcher confirms.</td><td>The rule reader alone</td></tr>
+  <tr><td>Understand a spoken report</td><td>ElevenLabs speech-to-text (Hindi, Marathi, English)</td><td>The transcript passes the same checks as typed text. An unknown place is rejected. The driver confirms a read-back before anything proceeds. Audio is not stored.</td><td>The browser's speech recognition, then typing or buttons</td></tr>
+  <tr><td>Speak read-backs, offers and updates</td><td>ElevenLabs text-to-speech</td><td>Speaks only sentences the engine produced, found by reference. It never accepts free text, so it cannot say what the plan does not back. Every sentence is cached, and a per-run character cap limits spend.</td><td>The phone's own voice, then text on screen</td></tr>
+  <tr><td>Escalation call</td><td>ElevenLabs conversational agent over a phone line</td><td>Opens with the engine's exact script. It is instructed never to add, change or promise a fact. It takes one answer, by voice or keypad, repeats once, and reports through a tool. Calls are opt-in, go only to listed numbers, and are capped.</td><td>The dispatcher's "simulate the call" buttons, or a typed answer</td></tr>
+  <tr><td>Customer wording</td><td>No model: templates</td><td>Filled in from the engine's facts. A generated sentence could be wrong about a time, so none is used.</td><td>Not needed</td></tr>
+</table>
+<div class="note"><b>Where AI never acts.</b> It does not assign deliveries, decide feasibility, compute a time or an ETA, approve a rescue, or change the plan. Those belong to the engine, the validator and people. This is what the booklet means by AI that informs a decision but does not silently override it.</div>
+
+<!-- ============================================================== 5 DIFFERENTIATION -->
+<h2>5. How this differs from existing approaches</h2>
+<table>
+  <tr><th style="width:27%">Typical approach</th><th style="width:30%">Where it falls short for this problem</th><th>What DeTour does instead</th></tr>
+  <tr><td>Spreadsheet and experience</td><td>Fast to start, but nothing checks a change. Capacity and windows are easy to break, and explaining the change is manual.</td><td>Every change is validated by an independent module and explained delivery by delivery.</td></tr>
+  <tr><td>Route planners that solve the whole day again</td><td>A new solution can reorder work already done and move parcels that are physically on a van.</td><td>Replans from the state at time T: history is frozen, parcels stay where they are, and the objective minimises churn.</td></tr>
+  <tr><td>Vehicle-tracking dashboards</td><td>They show where things are, not what to do next, and not whether a proposed fix is feasible.</td><td>It produces the fix, proves it feasible, and shows what it does to every other delivery.</td></tr>
+  <tr><td>A chatbot or AI that proposes changes</td><td>A fluent answer can be confidently wrong about a place or a time, and nothing stops it being applied.</td><td>AI only fills in a form. The result is verified against known places, previewed, and applied only on confirmation.</td></tr>
+  <tr><td>Handling a breakdown by phone calls and messages</td><td>No ordering, no timers, no record, and two people can both think they have the job.</td><td>A structured procedure: ranked candidates, a human approval, a 60-second offer, an automated call, one claim, and a full audit trail.</td></tr>
+</table>
+<p>Two further points set it apart. It works in the driver's own language, with spoken reports and read-backs, which matters roadside. And the core demonstration needs no paid service: every AI step has a local fallback, as the booklet requires.</p>
+
+<!-- ============================================================== 6 ARCHITECTURE -->
+<h2 style="break-before:page; border-top:none; margin-top:0; padding-top:0">6. System architecture</h2>
+<figure>
+<svg viewBox="0 0 700 742" width="100%" role="img" aria-label="System architecture of DeTour">
+  <defs>
+    <marker id="a1" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#14203a"/></marker>
+    <marker id="a1s" viewBox="0 0 8 8" refX="1" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L8 4L0 8z" fill="#14203a"/></marker>
+    <marker id="a1d" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#6b7790"/></marker>
+    <marker id="a1ds" viewBox="0 0 8 8" refX="1" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L8 4L0 8z" fill="#6b7790"/></marker>
+  </defs>
+
+  <text x="0" y="14" font-size="12.5" font-weight="700" fill="#14203a">People and screens</text>
+  <g font-size="10.8">
+    <rect x="0" y="22" width="222" height="96" rx="6" fill="#fff" stroke="#14203a"/><text x="10" y="41" font-weight="700" font-size="12">Dispatcher console</text>
+    <text x="10" y="58" fill="#44506b">Laptop. Day board, map, routes, what</text><text x="10" y="72" fill="#44506b">changed, rescues, messages, audit log.</text><text x="10" y="86" fill="#44506b">Describe a change in words, review</text><text x="10" y="100" fill="#44506b">its effect, then apply it.</text>
+    <rect x="239" y="22" width="222" height="96" rx="6" fill="#fff" stroke="#14203a"/><text x="249" y="41" font-weight="700" font-size="12">Driver app</text>
+    <text x="249" y="58" fill="#44506b">Phone. English, Hindi, Marathi. Speak</text><text x="249" y="72" fill="#44506b">or type a report, hear the read-back,</text><text x="249" y="86" fill="#44506b">answer an offer with a 60 second</text><text x="249" y="100" fill="#44506b">countdown.</text>
+    <rect x="478" y="22" width="222" height="96" rx="6" fill="#fff" stroke="#14203a"/><text x="488" y="41" font-weight="700" font-size="12">Head console</text>
+    <text x="488" y="58" fill="#44506b">Phone or laptop. The alert, a ranked</text><text x="488" y="72" fill="#44506b">shortlist with times and impact,</text><text x="488" y="86" fill="#44506b">approve or reject, response timer,</text><text x="488" y="100" fill="#44506b">backup approver.</text>
+  </g>
+  <g stroke="#14203a" stroke-width="1.6" fill="none">
+    <line x1="111" y1="120" x2="111" y2="150" marker-start="url(#a1s)" marker-end="url(#a1)"/>
+    <line x1="350" y1="120" x2="350" y2="150" marker-start="url(#a1s)" marker-end="url(#a1)"/>
+    <line x1="589" y1="120" x2="589" y2="150" marker-start="url(#a1s)" marker-end="url(#a1)"/>
+  </g>
+  <text x="124" y="139" font-size="9.6" fill="#44506b">HTTPS and live events</text>
+
+  <rect x="0" y="152" width="700" height="428" rx="8" fill="#f4f6f8" stroke="#14203a" stroke-width="1.6"/>
+  <text x="12" y="172" font-size="12.5" font-weight="700" fill="#14203a">DeTour server (Python, FastAPI, one process)</text>
+  <g font-size="10.8">
+    <rect x="12" y="182" width="676" height="40" rx="5" fill="#fff" stroke="#14203a"/><text x="22" y="198" font-weight="700" font-size="12">API and live events</text><text x="22" y="213" fill="#44506b">REST endpoints, server-sent events to every screen, one shared clock so countdowns match the server's timers</text>
+
+    <rect x="12" y="232" width="332" height="112" rx="5" fill="#fff" stroke="#0067a3" stroke-width="1.6"/><text x="22" y="250" font-weight="700" font-size="12" fill="#0067a3">Planning engine</text>
+    <text x="22" y="267" fill="#44506b">Cheapest insertion, then relocate, swap, 2-opt</text><text x="22" y="281" fill="#44506b">Time-dependent travel (closure periods)</text><text x="22" y="295" fill="#44506b">Replan from the state at time T, stops frozen</text><text x="22" y="309" fill="#44506b">Pickups and a modelled handover</text><text x="22" y="323" fill="#44506b">Kept / moved / broken, with a reason for each</text>
+
+    <rect x="356" y="232" width="332" height="112" rx="5" fill="#fff" stroke="#2b6446" stroke-width="1.6"/><text x="366" y="250" font-weight="700" font-size="12" fill="#2b6446">Independent validator</text>
+    <text x="366" y="267" fill="#44506b">Shares no code with the planner (a test checks)</text><text x="366" y="281" fill="#44506b">Re-times every route from scratch</text><text x="366" y="295" fill="#44506b">Capacity at every stop, windows, closures,</text><text x="366" y="309" fill="#44506b">shifts, pickup order, frozen stops, failed vehicle</text><text x="366" y="323" fill="#14203a" font-weight="600">A plan that fails is never shown as valid.</text>
+
+    <rect x="12" y="356" width="332" height="112" rx="5" fill="#fff" stroke="#14203a"/><text x="22" y="374" font-weight="700" font-size="12">Rescue flow</text>
+    <text x="22" y="391" fill="#44506b">Incident state machine; 60 s offer, 120 s approval</text><text x="22" y="405" fill="#44506b">Ranks rescue drivers by trying each in a replan</text><text x="22" y="419" fill="#44506b">Approval tied to the shortlist and plan version</text><text x="22" y="433" fill="#44506b">One claim only; re-validate, then commit</text><text x="22" y="447" fill="#44506b">Customer message drafts for approval</text>
+
+    <rect x="356" y="356" width="332" height="112" rx="5" fill="#fff" stroke="#14203a"/><text x="366" y="374" font-weight="700" font-size="12">Report reader</text>
+    <text x="366" y="391" fill="#44506b">Strict rule-based reader, always on</text><text x="366" y="405" fill="#44506b">Plus a language-model reader (fixed form only)</text><text x="366" y="419" fill="#44506b">Every place must be known and named in the text</text><text x="366" y="433" fill="#44506b">Unknown places are rejected, never guessed</text><text x="366" y="447" fill="#44506b">Only a preview until the dispatcher confirms</text>
+
+    <rect x="12" y="480" width="332" height="56" rx="5" fill="#fff" stroke="#14203a"/><text x="22" y="498" font-weight="700" font-size="12">Session and audit log</text>
+    <text x="22" y="514" fill="#44506b">Current and original plan, previews. A hash-chained</text><text x="22" y="527" fill="#44506b">log of every action, refusal and call event</text>
+
+    <rect x="356" y="480" width="332" height="56" rx="5" fill="#fff" stroke="#14203a"/><text x="366" y="498" font-weight="700" font-size="12">Voice and call services</text>
+    <text x="366" y="514" fill="#44506b">Cached speech with a spend cap, engine text only.</text><text x="366" y="527" fill="#44506b">The call runner and the answer reader.</text>
+
+    <rect x="12" y="546" width="676" height="26" rx="5" fill="#fff" stroke="#6b7790" stroke-dasharray="4 3"/><text x="22" y="563" fill="#44506b"><tspan font-weight="700" fill="#14203a">Data</tspan>  Scenario (JSON or CSV): locations, simulated travel-time matrix, vehicles, deliveries. Audit file. Audio cache.</text>
+  </g>
+
+  <g stroke="#6b7790" stroke-width="1.5" fill="none" stroke-dasharray="5 3">
+    <line x1="111" y1="582" x2="111" y2="624" marker-start="url(#a1ds)" marker-end="url(#a1d)"/>
+    <line x1="350" y1="582" x2="350" y2="624" marker-start="url(#a1ds)" marker-end="url(#a1d)"/>
+    <line x1="589" y1="582" x2="589" y2="624" marker-start="url(#a1ds)" marker-end="url(#a1d)"/>
+  </g>
+  <g font-size="9.6" fill="#44506b"><text x="122" y="606">typed reports</text><text x="361" y="606">speech in and out</text><text x="600" y="606">places the call</text></g>
+
+  <g font-size="10.8">
+    <rect x="0" y="626" width="222" height="104" rx="6" fill="#fff" stroke="#14203a" stroke-dasharray="6 3"/><text x="10" y="645" font-weight="700" font-size="12">Language model (optional)</text>
+    <text x="10" y="662" fill="#44506b">OpenAI. Reads typed reports into a</text><text x="10" y="676" fill="#44506b">fixed form that is then checked.</text><text x="10" y="702" fill="#6b7790" font-style="italic">Fallback: the rule-based reader</text>
+    <rect x="239" y="626" width="222" height="104" rx="6" fill="#fff" stroke="#14203a" stroke-dasharray="6 3"/><text x="249" y="645" font-weight="700" font-size="12">Speech (optional)</text>
+    <text x="249" y="662" fill="#44506b">ElevenLabs speech-to-text for reports;</text><text x="249" y="676" fill="#44506b">text-to-speech for read-backs, offers</text><text x="249" y="690" fill="#44506b">and updates.</text><text x="249" y="716" fill="#6b7790" font-style="italic">Fallback: browser speech, typing</text>
+    <rect x="478" y="626" width="222" height="104" rx="6" fill="#fff" stroke="#14203a" stroke-dasharray="6 3"/><text x="488" y="645" font-weight="700" font-size="12">Phone agent (optional)</text>
+    <text x="488" y="662" fill="#44506b">ElevenLabs conversational agent over a</text><text x="488" y="676" fill="#44506b">phone line rings the driver in Hindi.</text><text x="488" y="690" fill="#44506b">Voice or keypad answer.</text><text x="488" y="716" fill="#6b7790" font-style="italic">Fallback: simulate-the-call buttons</text>
+  </g>
+</svg>
+<figcaption>Figure 2. System architecture. The planning engine and the independent validator are the core and run with no external service. The language, speech and phone services (dashed) are optional layers, and each has a local fallback. The planner's output always passes through the validator before it is shown or committed. The phone agent reports the driver's answer to the server with a shared secret, and the server also checks the call itself.</figcaption>
+</figure>
+
+<h3>Components and technology</h3>
+<table>
+  <tr><th style="width:22%">Part</th><th>What it is</th></tr>
+  <tr><td>Planning engine</td><td>Python. Typed data model, deterministic solver, time-dependent travel model, replanner with frozen history, pickup and handover modelling, and a diff that classifies every delivery.</td></tr>
+  <tr><td>Independent validator</td><td>A separate Python package working on plain data. An automated test fails the build if it ever imports the planner.</td></tr>
+  <tr><td>Server</td><td>FastAPI. REST endpoints plus a server-sent event stream, so every screen updates live. State is held in one process, with the audit log written to disk.</td></tr>
+  <tr><td>Screens</td><td>React and TypeScript. Dispatcher console, driver app and head console, responsive from laptop to phone. The driver app works in three languages.</td></tr>
+  <tr><td>AI and phone</td><td>OpenAI for typed reports (optional). ElevenLabs for speech-to-text, text-to-speech and the phone agent, with a telephony provider carrying the call.</td></tr>
+  <tr><td>Data</td><td>Fictional only: a built-in demo scenario, or a scenario loaded from JSON or CSV. Travel times come from a simulated matrix. No live map, GPS or traffic data.</td></tr>
+  <tr><td>Run</td><td>One command each for the server and the screens. The core demonstration needs no paid service. Phones reach it through an HTTPS tunnel, which browsers require for the microphone.</td></tr>
+</table>
+
+<!-- ============================================================== 7 CORRECTNESS -->
+<h2>7. Correctness and evidence</h2>
+<p>The booklet asks that decisions with real consequences follow explicit, checkable rules. We treat that as the central requirement and test it directly.</p>
+<ul>
+  <li><b>The validator is tested by breaking plans on purpose.</b> Overloaded vehicles, late arrivals, tampered times and loads, ignored closures, duplicate or missing deliveries, a failed vehicle with later stops, altered or reordered completed stops, and pickups out of order are each caught.</li>
+  <li><b>Random disruption chains.</b> About 18,000 random sequences of closures, breakdowns and urgent deliveries, including a rescuer breaking down while loading, were run. Every resulting plan passed the validator, history was never rewritten, and every delivery was accounted for exactly once. This found several real defects, all fixed.</li>
+  <li><b>The worked example reproduces exactly</b> from the engine: the ranking, the times (14:15, 14:20, 14:50 and so on), the rejection of the fourth driver, and the broken delivery.</li>
+  <li><b>The rescue rules are tested</b>: one claim only, late answers refused and logged, approval void on any plan change, no double-booking, honest failure when nobody accepts, and the three variants (a driver does not answer, nobody accepts, the head is silent).</li>
+  <li><b>AI is tested against its guardrails</b>: a model that returns a real place id the text never names is rejected, invented vehicles are refused, invalid times are refused, and an instruction hidden in a report has no effect.</li>
+  <li><b>Real services were exercised.</b> Speech generated by the speech service was transcribed back word for word in English, Hindi and Marathi. A recorded Marathi report went through the whole voice path in a browser. The phone agent was run against the vendor's conversation simulator for confirm, no, keypad 1, keypad 2, an unclear answer twice, and an off-topic question.</li>
+</ul>
+<p>The prototype has more than 260 automated tests, run with one command for the server and one for the screens.</p>
+
+<!-- ============================================================== 8 STATUS -->
+<h2>8. Prototype status, limits and next steps</h2>
+<div class="cols">
+<div>
+<h3 style="margin-top:2pt">Working now</h3>
+<ul>
+  <li>Planning, three disruptions, replanning from state, the independent validator, and the kept / moved / broken comparison with reasons.</li>
+  <li>The dispatcher console, the driver app in three languages, and the head console.</li>
+  <li>Typed reports read by a language model with rule-based checks, with dispatcher confirmation.</li>
+  <li>Spoken reports and spoken read-backs, offers and updates, with cached audio and a spending cap.</li>
+  <li>The full rescue flow with its timers, the escalation call logic, the audit log, and customer message drafts.</li>
+</ul>
+</div>
+<div>
+<h3 style="margin-top:2pt">Honest limits</h3>
+<ul>
+  <li>The solver is a heuristic. It is not provably optimal.</li>
+  <li>Travel times are simulated. There is no live map or traffic.</li>
+  <li>A parcel on a running vehicle cannot move to another vehicle; a roadside handover between running vehicles is not modelled.</li>
+  <li>State is held in one process. There is no sign-in, so the demonstration relies on an unguessable tunnel address.</li>
+  <li><b>A real phone call has not yet been placed</b>, because a phone line is still being connected. The call logic is tested against a faked line, and the agent against the vendor's simulator.</li>
+  <li>The voice path was tested in a desktop browser, not yet on physical phones.</li>
+</ul>
+</div>
+</div>
+<h3>Next steps</h3>
+<ul>
+  <li>Connect a phone line and run the live three-phone rehearsal, including the real call, with a fallback for every step.</li>
+  <li>Check every acceptance criterion of the specification end to end, and document assumptions and limits in the repository README.</li>
+  <li>After the event: sign-in and roles, a database for state, and a road-network travel-time source in place of the simulated matrix.</li>
+</ul>
+
+</body>
+</html>

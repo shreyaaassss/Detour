@@ -17,6 +17,9 @@ cd backend && uv run pytest        cd frontend && npm test
 Add `?theme=light` to the URL to force the light theme.
 Phone demo: `cloudflared tunnel --url http://localhost:5173`, then set `PUBLIC_BASE_URL` in `.env`.
 
+## Submission report
+`docs/DeTour_Report.pdf` is the Problem Understanding, Solution Proposal & System Architecture report. Its source is `docs/report/report.html`; rebuild it with `python3 docs/report/build.py --team-id ... --team-name "..."` (needs Google Chrome).
+
 ## Phases
 0 scaffold, 1 engine, 2 validator, 3 disruptions and diff, 4 audit and API, 5 dispatcher UI,
 6 rescue flow, 7 text parsing, 8 voice, 9 escalation call, 10 hardening.
