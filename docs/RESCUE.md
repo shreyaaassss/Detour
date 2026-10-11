@@ -75,5 +75,5 @@ driver no longer feasible; the next approved driver is offered.
 
 - The engine gives **D8 to Meera as well** (she is already collecting at Hadapsar), not to Arjun. D9 is broken as in the PRD.
 - Meera's pickup is two parcels at one handover (14:15 to 14:20), then D7 at 14:50 as in the PRD.
-- Spoken reports and spoken read-backs, offers and updates are in ([VOICE.md](VOICE.md)). The real phone call is Phase 9; until
-  then the call is simulated from the dispatcher screen.
+- Spoken reports and spoken read-backs, offers and updates are in ([VOICE.md](VOICE.md)). The real phone call is set up in [CALLS.md](CALLS.md); until a number is
+  connected the call is simulated from the dispatcher screen.

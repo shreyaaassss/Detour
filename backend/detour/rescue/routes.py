@@ -45,7 +45,7 @@ class RespondBody(BaseModel):
 
 class CallBody(BaseModel):
     offer_id: str
-    outcome: Literal["answered", "confirmed", "declined", "no_answer", "voicemail", "busy", "ambiguous"]
+    outcome: Literal["answered", "confirmed", "declined", "no_answer", "voicemail", "busy", "ambiguous", "unclear"]
 
 
 class ClockBody(BaseModel):

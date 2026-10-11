@@ -20,6 +20,17 @@ Send `X-Actor: <name>` to record who acted (defaults to `dispatcher`). The audit
 | `GET /audit?limit=&after=`, `GET /audit/verify` | The audit log and a hash-chain check |
 | `GET /events` | Server-sent events: `hello`, `state` (refetch `/state`), `audit` |
 
+### Phone calls
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /telephony/status` | Whether real calls are on, what is missing, masked numbers, calls used |
+| `POST /telephony/agent` (header `X-Detour-Key`) | The phone agent's `report_decision` tool reports the driver's answer. Only with the shared secret |
+| `POST /telephony/test` | Ring a listed number once with a harmless test |
+| `POST /telephony/webhook` | A call result (also what the simulate buttons use). Outcomes now include `unclear` |
+
+See [CALLS.md](CALLS.md).
+
 ### Voice
 
 | Endpoint | Purpose |

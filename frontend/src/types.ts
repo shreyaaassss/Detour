@@ -131,3 +131,9 @@ export interface VoiceStatus {
   cache: { files: number; hits: number; misses: number; errors: number }
   account: { used: number; limit: number } | null
 }
+
+export interface TelephonyStatus {
+  enabled: boolean; ready: boolean; missing: string[]; language: string; numbers: Record<string, string>
+  placed: number; limit: number; public_url_set: boolean
+  recent: { offer: string; what: string; detail: string; at: number }[]
+}

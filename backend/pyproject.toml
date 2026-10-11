@@ -25,3 +25,7 @@ line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# the agent's instructions are prose, and read better on long lines
+"detour/telephony/setup.py" = ["E501"]

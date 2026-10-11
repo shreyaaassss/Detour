@@ -49,19 +49,19 @@ TEXT: dict[str, dict[str, str]] = {
     },
     "call_script": {
         "en": (
-            "This is an automated call from DeTour logistics. Urgent reassignment: pick up parcel {parcel} from a "
-            "broken-down van at {site} and deliver to {dest} by {due}. Your logistics head has approved this. "
-            "To accept, say confirm. To decline, say no."
+            "This is an automated call from DeTour logistics. Urgent: pick up parcel {parcel} from a broken-down van "
+            "at {site} and deliver to {dest} by {due}. Your logistics head approved this. "
+            "To accept, press 1 or say confirm. To decline, press 2 or say no."
         ),
         "hi": (
-            "यह डीटूर लॉजिस्टिक्स की ऑटोमेटेड कॉल है। अत्यावश्यक काम: {site} में खराब हुई गाड़ी से पार्सल {parcel} उठाएँ "
-            "और {dest} में {due} तक पहुँचाएँ। आपके लॉजिस्टिक्स प्रमुख ने इसे मंज़ूर किया है। "
-            "स्वीकार करने के लिए कन्फर्म बोलें। मना करने के लिए नहीं बोलें।"
+            "यह डीटूर लॉजिस्टिक्स की ऑटोमेटेड कॉल है। अत्यावश्यक: {site} में खराब गाड़ी से पार्सल {parcel} उठाएँ "
+            "और {dest} में {due} तक पहुँचाएँ। लॉजिस्टिक्स प्रमुख ने इसे मंज़ूर किया है। "
+            "स्वीकार करने के लिए 1 दबाएँ या कन्फर्म बोलें। मना करने के लिए 2 दबाएँ या नहीं बोलें।"
         ),
         "mr": (
-            "हा डीटूर लॉजिस्टिक्सकडून आलेला स्वयंचलित कॉल आहे. तातडीचे काम: {site} येथे बिघडलेल्या गाडीतून पार्सल "
-            "{parcel} घ्या आणि {dest} येथे {due} पर्यंत पोहोचवा. तुमच्या लॉजिस्टिक्स प्रमुखांनी याला मंजुरी दिली आहे. "
-            "स्वीकारण्यासाठी कन्फर्म म्हणा. नकार देण्यासाठी नाही म्हणा."
+            "हा डीटूर लॉजिस्टिक्सकडून आलेला स्वयंचलित कॉल आहे. तातडीचे: {site} येथे बिघडलेल्या गाडीतून पार्सल "
+            "{parcel} घ्या आणि {dest} येथे {due} पर्यंत पोहोचवा. लॉजिस्टिक्स प्रमुखांनी मंजुरी दिली आहे. "
+            "स्वीकारण्यासाठी 1 दाबा किंवा कन्फर्म म्हणा. नकार देण्यासाठी 2 दाबा किंवा नाही म्हणा."
         ),
     },
     "accepted_thanks": {

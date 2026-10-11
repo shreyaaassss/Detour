@@ -24,6 +24,9 @@ from detour.rescue.clock import SimClock
 from detour.rescue.routes import build_router
 from detour.rescue.service import RescueConfig, RescueService
 from detour.session import ApiError, Preview, Session, diff_json
+from detour.telephony.config import CallSettings
+from detour.telephony.routes import build_router as build_telephony_router
+from detour.telephony.service import TelephonyService
 from detour.voice.routes import build_router as build_voice_router
 from detour.voice.service import VoiceService
 
@@ -71,11 +74,14 @@ def create_app(
     rescue_config: RescueConfig | None = None,
     llm: Reader | None = None,
     voice: VoiceService | None = None,
+    telephony: TelephonyService | None = None,
     clock: SimClock | None = None,
     wall=None,
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        loop = asyncio.get_running_loop()
+        app.state.telephony.deliver = lambda fn: loop.call_soon_threadsafe(fn)  # phone events come from other threads
         task = None
         if start_ticker:  # the offer, call and approval timers run on this tick
 
@@ -102,6 +108,10 @@ def create_app(
     voice = voice or VoiceService(None)
     voice._log = lambda action, details: session.log("system", action, details)
     app.state.voice = voice
+    tel = telephony or TelephonyService(CallSettings())
+    app.state.telephony = tel
+    rescue.attach_calls(tel)
+    app.include_router(build_telephony_router(session, rescue, tel))
     app.include_router(build_router(session, rescue))
     app.include_router(build_voice_router(session, rescue, voice))
 

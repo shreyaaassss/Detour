@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from detour.api import create_app, default_audit_path
 from detour.parsing.llm import OpenAIReader
 from detour.rescue.service import RescueConfig
+from detour.telephony.config import from_env as calls_from_env
+from detour.telephony.service import TelephonyService
 from detour.voice.service import from_env
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
@@ -33,5 +35,9 @@ def _reader() -> OpenAIReader | None:
 
 _audit = default_audit_path()
 app = create_app(
-    _audit, rescue_config=_config(), llm=_reader(), voice=from_env(dict(os.environ), _audit.parent / "audio")
+    _audit,
+    rescue_config=_config(),
+    llm=_reader(),
+    voice=from_env(dict(os.environ), _audit.parent / "audio"),
+    telephony=TelephonyService(calls_from_env(dict(os.environ), _audit.parent / "telephony.json")),
 )

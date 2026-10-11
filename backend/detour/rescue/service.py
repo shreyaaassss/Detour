@@ -54,6 +54,7 @@ class RescueService:
         self.offers: dict[str, Offer] = {}
         self.notes: list[Notification] = []
         self._committing: set[str] = set()
+        self.calls: Any = None  # the phone service, when real calls are set up
         self._n_inc = 0
         self._n_off = 0
         session.on_change(self._plan_changed)
@@ -445,7 +446,7 @@ class RescueService:
             raise ApiError(422, "bad_response", "Respond with accept or decline.")
         return inc
 
-    def telephony_event(self, offer_id: str, outcome: str) -> Incident:
+    def telephony_event(self, offer_id: str, outcome: str, how: str | None = None) -> Incident:
         """What a phone call reports back. The real provider (or the simulate buttons) calls this."""
         off = self.offers.get(offer_id)
         if off is None:
@@ -466,15 +467,17 @@ class RescueService:
                 },
             )
             raise ApiError(409, "offer_closed", "This call is already finished. Nothing was changed.")
-        self._log("telephony", "call_event", {"incident": inc.id, "offer": off.id, "outcome": outcome})
+        self._log("telephony", "call_event", {"incident": inc.id, "offer": off.id, "outcome": outcome, "how": how})
         if outcome == "answered":
             off.call_state = "in_call"
             off.conversation_deadline = self.wall() + self.cfg.conversation_limit
             self._publish("incident", id=inc.id, state=inc.state)
         elif outcome == "confirmed":
-            self._accept(inc, off, "call", who)
+            self._accept(inc, off, "call", who, how)
         elif outcome == "declined":
             self._declined(inc, off, f"{off.driver} said no on the call", "declined")
+        elif outcome == "unclear":  # the agent already asked twice
+            self._declined(inc, off, f"{off.driver}'s answer on the call was unclear", "timed_out")
         elif outcome in ("no_answer", "voicemail", "busy"):
             self._declined(inc, off, f"the call to {off.driver} was not answered ({outcome})", "timed_out")
         elif outcome == "ambiguous":
@@ -488,12 +491,18 @@ class RescueService:
         return inc
 
     # --- 4. acceptance, re-validation, commit ----------------------------------------------------
-    def _accept(self, inc: Incident, off: Offer, via: str, who: str) -> None:
-        inc.claim = {"offer": off.id, "vehicle": off.vehicle_id, "via": via, "at": self.wall()}  # the single claim
+    def _accept(self, inc: Incident, off: Offer, via: str, who: str, how: str | None = None) -> None:
+        inc.claim = {
+            "offer": off.id,
+            "vehicle": off.vehicle_id,
+            "via": via,
+            "how": how,
+            "at": self.wall(),
+        }  # the single claim
         off.status, off.outcome, off.closed = "accepted", f"accepted by {via}", self.wall()
         self._close_open(inc, "another response won", except_id=off.id)
-        self._log(who, "offer_accepted", {"incident": inc.id, "offer": off.id, "via": via})
-        self._set(inc, "ACCEPTED", f"{off.driver} ({off.vehicle_id}) accepted by {via}")
+        self._log(who, "offer_accepted", {"incident": inc.id, "offer": off.id, "via": via, "how": how})
+        self._set(inc, "ACCEPTED", f"{off.driver} ({off.vehicle_id}) accepted by {via}{f' ({how})' if how else ''}")
         try:
             self._commit_rescue(inc, off, via)
         except ApiError as e:
@@ -746,6 +755,43 @@ class RescueService:
             {"en": f"No answer in the app. Calling {push.driver} ({push.vehicle_id})."},
             inc,
         )
+        self._start_real_call(inc, call)
+
+    # --- the real phone call (when it is set up) -------------------------------------------------------
+    def attach_calls(self, telephony: Any) -> None:
+        self.calls = telephony
+
+    def _start_real_call(self, inc: Incident, call: Offer) -> None:
+        """Ring the driver's phone with the engine's own script. Without a phone line this does nothing and the
+        dispatcher's simulate-the-call buttons stand in, through the very same events."""
+        tel = self.calls
+        if tel is None:
+            return
+        lang = tel.language_for(call.language)
+        facts = self._facts(inc)
+        plain = {k: (v.get(lang, v["en"]) if isinstance(v, dict) else v) for k, v in facts.items()}
+        started = tel.start(
+            call.id,
+            call.driver,
+            script=call.script.get(lang) or call.script["en"],
+            language=lang,
+            variables={**plain, "driver": call.driver or ""},
+            ring_seconds=int(self.cfg.ring_timeout),
+            on_event=self._from_call,
+            is_open=lambda: call.status == "open",
+        )
+        self._log(
+            "system",
+            "real_call_started" if started else "real_call_skipped",
+            {"incident": inc.id, "offer": call.id, "driver": call.driver, "language": lang},
+        )
+
+    def _from_call(self, offer_id: str, outcome: str, how: str | None = None) -> None:
+        """An outcome from the phone line, arriving on the app's own thread."""
+        try:
+            self.telephony_event(offer_id, outcome, how)
+        except ApiError:
+            pass  # a late result: it was refused and logged already
 
     # --- views ---------------------------------------------------------------------------------------
     def incident_view(self, inc: Incident) -> dict[str, Any]:
