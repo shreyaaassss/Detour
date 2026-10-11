@@ -10,7 +10,7 @@ interface Session { sendUserMessage: (t: string) => void; endSession: () => Prom
 /** The escalation call, held in the browser: a live conversation with the ElevenLabs voice agent. The agent opens
  * with the engine's own script, answers questions only from the engine's facts, and records one clear answer. The
  * server follows the conversation and moves the rescue on, exactly as it would for a phone call. */
-export function CallPanel({ offer, onChange }: { offer: Offer; onChange: () => void }) {
+export function CallPanel({ offer, busy, onChange, onSettle }: { offer: Offer; busy: boolean; onChange: () => void; onSettle: (yes: boolean) => void }) {
   const [phase, setPhase] = useState<Phase>('ringing')
   const [lang, setLang] = useState<'en' | 'hi'>('en')
   const [mode, setMode] = useState<'speaking' | 'listening'>('speaking')
@@ -29,6 +29,15 @@ export function CallPanel({ offer, onChange }: { offer: Offer; onChange: () => v
   const stopTalk = () => { release.current = setTimeout(() => setTalking(false), 350) } // keep the last syllable
 
   useEffect(() => () => { void session.current?.endSession().catch(() => {}) }, [])
+  // After the call ends the server reads the agent's recorded answer. Keep asking until the page moves on; if it
+  // has not after a few seconds, the answer was not clear, and the presenter can settle it by hand.
+  const [stuck, setStuck] = useState(false)
+  useEffect(() => {
+    if (phase !== 'ended') return
+    const tick = setInterval(onChange, 1000)
+    const late = setTimeout(() => setStuck(true), 9000)
+    return () => { clearInterval(tick); clearTimeout(late) }
+  }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function answer() {
     if (!offer.driver) return
@@ -80,6 +89,9 @@ export function CallPanel({ offer, onChange }: { offer: Offer; onChange: () => v
                 <button aria-pressed={lang === 'en'} onClick={() => setLang('en')}>English</button>
                 <button aria-pressed={lang === 'hi'} onClick={() => setLang('hi')}>हिन्दी</button>
               </div>
+              <span className="grow" />
+              <button className="btn quiet small" disabled={busy} onClick={() => onSettle(true)}>Skip the call: confirms</button>
+              <button className="btn quiet small" disabled={busy} onClick={() => onSettle(false)}>declines</button>
             </div>
           ) : <p className="muted">The microphone needs a secure (https) address.</p>}
         </>
@@ -113,6 +125,14 @@ export function CallPanel({ offer, onChange }: { offer: Offer; onChange: () => v
             </>
           )}
         </>
+      )}
+      {phase === 'ended' && !stuck && <p className="call-state" role="status">Recording the answer…</p>}
+      {phase === 'ended' && stuck && (
+        <div className="turn-actions">
+          <span className="muted">The call ended without a clear answer.</span>
+          <button className="btn" disabled={busy} onClick={() => onSettle(true)}>Record: confirmed</button>
+          <button className="btn" disabled={busy} onClick={() => onSettle(false)}>Record: declined</button>
+        </div>
       )}
       {err && <p className="formerr" role="alert">{err}</p>}
     </div>

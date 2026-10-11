@@ -12,7 +12,7 @@ export const OFFERING = new Set(['HEAD_APPROVED', 'OFFER_PUSHED', 'CALL_ESCALATE
 export const ENDED = new Set(['COMMITTED', 'EXHAUSTED'])
 export const KEY = 'detour.demo'
 
-export interface DispatchTurn { id: number; text: string; refusal?: string; parse?: ParseInfo; preview?: PreviewResult; applied?: boolean; discarded?: boolean }
+export interface DispatchTurn { id: number; text: string; refusal?: string; suggest?: { name: string; sentence: string }[]; parse?: ParseInfo; preview?: PreviewResult; applied?: boolean; discarded?: boolean }
 /** 0 nothing reported, 1 the place was not understood, 2 waiting for the driver's yes, 3 waiting for the head,
  * 4 an offer is out, 5 the rescue is settled. */
 export type Phase = 0 | 1 | 2 | 3 | 4 | 5
@@ -21,7 +21,7 @@ export interface Demo {
   state: AppState | null; loading: string | null; cfg: RescueConfig | undefined
   incident: Incident | null; proposal: Proposal | null; feasible: Candidate[]; chosen: string[]; setPicks: (v: string[]) => void
   offer: Offer | null; phase: Phase; said: string | null; turns: DispatchTurn[]; seenChanges: boolean; markChangesSeen: () => void
-  busy: boolean; error: string | null; clearError: () => void; sound: boolean; voice: boolean; setSound: (v: boolean) => void
+  places: string[]; busy: boolean; error: string | null; clearError: () => void; sound: boolean; voice: boolean; setSound: (v: boolean) => void
   report: (text: string, locationId?: string) => void; confirmReport: (yes: boolean) => void; approve: () => void
   answer: (o: Offer, yes: boolean) => void; skipWait: (o: Offer) => void; reload: () => void; dispatchSay: (text: string) => void; urgent: () => void
   settle: (t: DispatchTurn, apply: boolean) => void; restart: () => void

@@ -13,7 +13,10 @@ function recCtor(): (new () => Rec) | null {
 }
 
 /** A microphone button with a live transcript, a box to type in, and the suggested line as a one-tap prompt. */
-export function SayBox({ suggestions, busy, placeholder, onSay }: { suggestions: string[]; busy: boolean; placeholder: string; onSay: (text: string) => void }) {
+export function SayBox({ suggestions, busy, placeholder, onSay, fix }: {
+  suggestions: string[]; busy: boolean; placeholder: string; onSay: (text: string) => void
+  fix?: (heard: string) => string // tidy a transcript (place spellings) before it is sent
+}) {
   const [text, setText] = useState('')
   const [listening, setListening] = useState(false)
   const rec = useRef<Rec | null>(null)
@@ -43,7 +46,8 @@ export function SayBox({ suggestions, busy, placeholder, onSay }: { suggestions:
         let said = ''
         try { if (audio) said = (await api.transcribe(audio)).transcript } catch { said = '' }
         setWorking(false)
-        if (said || backup) send(said || backup); else setText('')
+        const got = said || backup
+        if (got) send(fix ? fix(got) : got); else setText('')
         return
       }
       try { tape.current = await startRecording('en', true); setText(''); setListening(true) } catch { setViaServer(false) }
@@ -59,7 +63,7 @@ export function SayBox({ suggestions, busy, placeholder, onSay }: { suggestions:
       setText(heard.current)
     }
     r.onerror = () => setListening(false)
-    r.onend = () => { setListening(false); if (heard.current) send(heard.current) }
+    r.onend = () => { setListening(false); if (heard.current) send(fix ? fix(heard.current) : heard.current) }
     rec.current = r
     try { r.start(); setListening(true) } catch { setListening(false) }
   }

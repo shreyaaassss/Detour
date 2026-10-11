@@ -32,7 +32,8 @@ function Shell() {
   const done = (to: string) =>
     (to === '/demo/plan' && (d.phase > 0 || pathname !== to)) || (to === '/demo/driver' && d.phase >= 3) || (to === '/demo/head' && d.phase >= 4)
     || (to === '/demo/rescue' && d.phase >= 5) || (to === '/demo/changes' && d.seenChanges)
-  const showToast = d.state !== null && pathname !== next.to && closed !== next.to + d.phase
+  // the settled rescue page already carries the one button onward
+  const showToast = d.state !== null && pathname !== next.to && closed !== next.to + d.phase && !(pathname === '/demo/rescue' && d.phase === 5)
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
 
   return (

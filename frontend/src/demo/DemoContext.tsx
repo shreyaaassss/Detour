@@ -4,6 +4,7 @@ import type { Incident } from '../types'
 import { useDetour } from '../useDetour'
 import { useOverview } from '../useRescue'
 import { Ctx, ENDED, KEY, OFFERING, type Demo, type DispatchTurn, type Phase } from './store'
+import { didYouMean, spokenNames } from './places'
 import { hush, setVoice, speak, voiceReady, type SayRef } from './voice'
 
 function stored(): { id?: string; said?: string; seen?: boolean } {
@@ -80,6 +81,8 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     if (incident.state === 'COMMITTED') sayOnce(`ok-${incident.id}`, 'Rescue committed. The plan has been updated.')
   }, [incident, offer, sayOnce])
 
+  const places = useMemo(() => spokenNames((state?.scenario.locations ?? []).map((l) => l.name)), [state?.scenario.locations])
+
   const took = (i: Incident) => { setFresh(i); setMineId(i.id); overview.reload() }
 
   const value: Demo = {
@@ -87,7 +90,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     loading: ready && state ? null : loadError ? 'Waking the server. This can take up to a minute the first time.' : 'Setting up the day.',
     cfg: overview.data?.config, incident, proposal, feasible, chosen, setPicks, offer, phase, said, turns, seenChanges,
     markChangesSeen: () => setSeen(true),
-    busy, error, clearError: () => setError(null), sound, voice,
+    places, busy, error, clearError: () => setError(null), sound, voice,
     setSound: (v) => { setSoundState(v); setVoice(v) },
     report: (text, locationId) => void act(async () => {
       setSaid(text); setPicks(null)
@@ -121,7 +124,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         speak(r.parse.summary ?? 'Understood. Please confirm.', r.say_ref ? { what: 'said', ref: r.say_ref } : undefined)
       } catch (e) {
         if (!(e instanceof ApiError) || e.status !== 422) throw e
-        setTurns((t) => [...t, { id, text, refusal: e.message }])
+        setTurns((t) => [...t, { id, text, refusal: e.message, suggest: didYouMean(text, places) }])
         const ref = typeof e.extra.say_ref === 'string' ? e.extra.say_ref : null
         speak(e.message, ref ? { what: 'said', ref } : undefined)
       }

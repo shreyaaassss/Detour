@@ -6,6 +6,7 @@ import { RouteLanes } from '../components/RouteLanes'
 import { StatusChip } from '../components/ui'
 import { hhmm } from '../format'
 import { CallPanel } from './CallPanel'
+import { didYouMean, snapPlaces } from './places'
 import { LINES, useDemo } from './store'
 import { SayBox } from './SayBox'
 
@@ -71,6 +72,12 @@ export function DriverPage() {
       {d.phase === 1 && i && (
         <Card label="DeTour" tone="refuse">
           <p className="turn-big">{i.note}</p>
+          {didYouMean(d.said ?? '', d.places).length > 0 && (
+            <div className="turn-actions">
+              <span className="muted">Did you mean</span>
+              {didYouMean(d.said ?? '', d.places).map((x) => <button key={x.sentence} className="btn primary" disabled={d.busy} onClick={() => d.report(x.sentence)}>{x.name}?</button>)}
+            </div>
+          )}
           <p className="muted">Choose the place, or say it again.</p>
           <div className="places">
             {i.known_locations.filter((l) => l.id !== 'depot').map((l) => (
@@ -104,7 +111,7 @@ export function DriverPage() {
 
       {d.phase <= 1 && (
         <div className="say-dock">
-          <SayBox suggestions={[LINES.breakdown]} busy={d.busy} placeholder="Speak, or type what the driver says" onSay={(t) => d.report(t)} />
+          <SayBox suggestions={[LINES.breakdown]} busy={d.busy} placeholder="Speak, or type what the driver says" onSay={(t) => d.report(t)} fix={(t) => snapPlaces(t, d.places)} />
         </div>
       )}
     </section>
@@ -163,42 +170,52 @@ export function RescuePage() {
     </section>
   )
   const who = d.offer?.driver ?? i.offers.at(-1)?.driver ?? 'Rescue driver'
+  const past = i.offers.filter((o) => o.status !== 'open')
+  const won = i.offers.find((o) => o.status === 'accepted')
+  if (d.phase === 5) return (
+    <section className="show-feed">
+      <Head who={`${won?.driver ?? who}'s phone`} title={won ? 'Accepted. The rescue is committed.' : 'Nobody could take it'} />
+      <Card label={won ? (won.channel === 'call' ? 'Confirmed on the call' : 'Accepted in the app') : 'No rescue'} tone={won ? 'good' : 'refuse'}>
+        <p className="turn-big">{won ? `${won.driver} is on the way to collect the parcels. The plan has been updated.` : i.note}</p>
+        <div className="turn-actions"><Link to="/demo/changes" className="btn primary big">See what changed</Link></div>
+      </Card>
+      {past.length > 1 && <ul className="history">{past.map((o) => <li key={o.id}>{o.driver}, {o.channel === 'call' ? 'by call' : 'in the app'}: {o.status === 'accepted' ? 'accepted' : o.outcome ?? o.status}</li>)}</ul>}
+    </section>
+  )
+  const o = d.offer
   return (
     <section className="show-feed">
-      <Head who={`${who}'s phone`} title={d.offer ? 'A rescue is being asked of you' : 'This request is settled'}>
+      <Head who={`${who}'s phone`} title={o?.channel === 'call' ? 'No answer in the app, so DeTour is calling' : 'A rescue is being asked of you'}>
         One driver is asked at a time, with 60 seconds to answer. Only one can claim it. A late tap is refused.
       </Head>
-      {i.offers.map((o) => {
-        const open = o.status === 'open'
-        return (
-          <Card key={o.id} label={o.channel === 'call' ? `Calling ${o.driver}: no answer in the app` : `Offer to ${o.driver}`} tone={o.status === 'accepted' ? 'good' : undefined}>
-            <div className="offer">
-              <div>
-                <p className="turn-big">{o.text.en}</p>
-                {!open && <p className="muted">{o.status === 'accepted' ? `${o.driver} accepted.` : `${o.outcome ?? o.status}. The next driver was asked.`}</p>}
-              </div>
-              {open && d.cfg && <Countdown deadline={o.call_state === 'in_call' ? o.conversation_deadline : o.deadline} total={o.channel === 'call' ? o.deadline - o.sent : d.cfg.push_timeout} label="seconds left" size={88} />}
-            </div>
-            {open && o.channel === 'push' && (
+      {past.length > 0 && <ul className="history">{past.map((x) => <li key={x.id}>{x.driver}, {x.channel === 'call' ? 'by call' : 'in the app'}: {x.outcome ?? x.status}</li>)}</ul>}
+      {o && o.channel === 'push' && (
+        <Card label={`Offer to ${o.driver}`}>
+          <div className="offer">
+            <p className="turn-big">{o.text.en}</p>
+            {d.cfg && <Countdown deadline={o.deadline} total={d.cfg.push_timeout} label="seconds left" size={88} />}
+          </div>
+          <div className="turn-actions">
+            <button className="btn primary big" disabled={d.busy} onClick={() => d.answer(o, true)}>Accept</button>
+            <button className="btn big" disabled={d.busy} onClick={() => d.answer(o, false)}>Decline</button>
+            <button className="btn quiet" disabled={d.busy} onClick={() => d.skipWait(o)}>Do not answer (skip the 60 seconds)</button>
+          </div>
+        </Card>
+      )}
+      {o && o.channel === 'call' && (
+        d.voice
+          ? <CallPanel key={o.id} offer={o} busy={d.busy} onChange={d.reload} onSettle={(yes) => d.answer(o, yes)} />
+          : (
+            <Card label={`Calling ${o.driver}`}>
+              <p className="turn-big">The voice agent is not set up on this server.</p>
               <div className="turn-actions">
-                <button className="btn primary big" disabled={d.busy} onClick={() => d.answer(o, true)}>Accept</button>
-                <button className="btn big" disabled={d.busy} onClick={() => d.answer(o, false)}>Decline</button>
-                <button className="btn quiet" disabled={d.busy} onClick={() => d.skipWait(o)}>Do not answer (skip the 60 seconds)</button>
+                <button className="btn primary big" disabled={d.busy} onClick={() => d.answer(o, true)}>Answers: confirm</button>
+                <button className="btn big" disabled={d.busy} onClick={() => d.answer(o, false)}>Answers: no</button>
               </div>
-            )}
-            {open && o.channel === 'call' && (
-              <>
-                {d.voice && <CallPanel offer={o} onChange={d.reload} />}
-                <div className="turn-actions">
-                  <span className="muted small">{d.voice ? 'Or settle the call without speaking:' : 'The voice agent is not set up on this server. Settle the call here:'}</span>
-                  <button className="btn" disabled={d.busy} onClick={() => d.answer(o, true)}>Answers: confirm</button>
-                  <button className="btn" disabled={d.busy} onClick={() => d.answer(o, false)}>Answers: no</button>
-                </div>
-              </>
-            )}
-          </Card>
-        )
-      })}
+            </Card>
+          )
+      )}
+      {!o && <Card label="DeTour"><p className="turn-big">Asking the next driver…</p></Card>}
     </section>
   )
 }
@@ -239,7 +256,18 @@ export function DispatcherPage() {
       {d.turns.map((t) => (
         <div key={t.id} className="turn-group">
           <Bubble who="Dispatcher">“{t.text}”</Bubble>
-          {t.refusal && <Card label="Refused" tone="refuse"><p className="turn-big">{t.refusal}</p><p className="muted">Nothing was changed.</p></Card>}
+          {t.refusal && (
+            <Card label="Refused" tone="refuse">
+              <p className="turn-big">{t.refusal}</p>
+              <p className="muted">Nothing was changed.</p>
+              {t.suggest && t.suggest.length > 0 && (
+                <div className="turn-actions">
+                  <span className="muted">Did you mean</span>
+                  {t.suggest.map((x) => <button key={x.sentence} className="btn" disabled={d.busy} onClick={() => d.dispatchSay(x.sentence)}>{x.name}?</button>)}
+                </div>
+              )}
+            </Card>
+          )}
           {t.preview && (
             <Card label={t.parse ? (t.parse.method === 'llm' ? `Read by ${t.parse.model}, then checked by rules` : 'Read by the rule reader') : 'Entered with the form'} tone={t.applied ? 'good' : undefined}>
               <p className="turn-big">{t.parse?.summary ?? t.preview.cause}</p>
@@ -260,7 +288,7 @@ export function DispatcherPage() {
         </div>
       ))}
       <div className="say-dock">
-        <SayBox suggestions={[LINES.unknown, LINES.closure]} busy={d.busy} placeholder="Speak, or type what changed" onSay={d.dispatchSay} />
+        <SayBox suggestions={[LINES.unknown, LINES.closure]} busy={d.busy} placeholder="Speak, or type what changed" onSay={d.dispatchSay} fix={(t) => snapPlaces(t, d.places)} />
         <button className="btn" disabled={d.busy} onClick={d.urgent}>Add urgent delivery D13</button>
       </div>
       {applied && <div className="turn wide"><ComparePanel key={s.version} state={s} /></div>}

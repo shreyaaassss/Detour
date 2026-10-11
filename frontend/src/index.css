@@ -736,3 +736,8 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--c-slate); }
 .talk { width: 100%; min-height: 64px; border-radius: var(--radius); border: 2px solid var(--c-orange); background: var(--surface); color: var(--c-orange); font: inherit; font-size: 18px; font-weight: 500; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; transition: background 0.1s ease, color 0.1s ease, transform 0.08s ease; }
 .talk.on { background: var(--c-orange); color: #fff; transform: scale(0.99); }
 .talk:disabled { border-color: var(--color-ash-gray); color: var(--color-iron-gray); cursor: default; }
+
+.history { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 14px; color: var(--color-slate); }
+.history li::before { content: '– '; }
+.turn-actions a.btn { text-decoration: none; }
+.turn-actions .grow { flex: 1; }
