@@ -3,7 +3,7 @@
 export interface Location { id: string; name: string; x: number; y: number }
 export interface Vehicle {
   id: string; capacity: number; start_location: string; driver: string | null
-  status: 'active' | 'failed'; failed_at: number | null; failure_location: string | null
+  status: 'active' | 'failed'; failed_at: number | null; failure_location: string | null; language: string
 }
 export interface Delivery {
   id: string; location: string; size: number; window_start: number; window_end: number
@@ -70,3 +70,49 @@ export interface AuditEntry {
 export interface AuditView { entries: AuditEntry[]; total: number; chain: { valid: boolean; entries: number; broken_at: number | null; reason: string | null } }
 
 export type Presets = Record<string, Disruption>
+
+export interface Candidate {
+  vehicle_id: string; driver: string | null; feasible: boolean; reason: string | null
+  reach_site: number | null; leave_site: number | null; delivery_time: number | null
+  own_delay: number | null; impact: Record<Status, number> | null
+  other_changes: { delivery_id: string; status: Status; reason: string }[]; rank: number | null
+}
+export interface Proposal {
+  vehicle_id: string; location_id: string; failure_time: number; primary: string | null
+  primary_place: string | null; primary_due: number | null; parcels: string[]
+  plan_version: number; candidates: Candidate[]
+}
+export interface Offer {
+  id: string; incident_id: string; index: number; vehicle_id: string; driver: string | null
+  channel: 'push' | 'call'; sent: number; deadline: number
+  status: 'open' | 'accepted' | 'declined' | 'timed_out' | 'closed'; outcome: string | null
+  call_state: 'ringing' | 'in_call' | null; conversation_deadline: number | null; ambiguous: number
+  text: Record<string, string>; script: Record<string, string>; language: string
+}
+export type IncidentState =
+  | 'REPORTED' | 'DRIVER_CONFIRMED' | 'AWAITING_HEAD' | 'HEAD_APPROVED' | 'OFFER_PUSHED' | 'CALL_ESCALATED'
+  | 'CANDIDATE_DECLINED' | 'ACCEPTED' | 'COMMITTED' | 'HEAD_TIMEOUT' | 'EXHAUSTED' | 'CANCELLED' | 'REJECTED'
+export interface Incident {
+  id: string; driver: string; vehicle_id: string; language: string; transcript: string
+  source: 'text' | 'voice' | 'buttons'; location_id: string | null; location_name: string | null
+  state: IncidentState; note: string; known_locations: { id: string; name: string }[]
+  readback: Record<string, string>; parcels: string[]; primary: string | null; failure_time: number | null
+  proposal: Proposal | null; approver_role: 'head' | 'backup'; approved_by: string | null
+  shortlist: string[]; current: number; claim: { offer: string; vehicle: string; via: string } | null
+  confirm_deadline: number | null; head_deadline: number | null; reprompts: number
+  escalated_to_dispatcher: boolean; result: string | null
+  history: { wall: number; sim: number | null; state: string; note: string }[]
+  offers: Offer[]; active_offer: Offer | null
+}
+export interface RescueConfig {
+  push_timeout: number; driver_confirm: number; head_response: number; ring_timeout: number
+  conversation_limit: number; max_shortlist: number
+}
+export interface RescueOverview {
+  server_time: number; clock: { sim: number; speed: number }; config: RescueConfig; incidents: Incident[]
+}
+export interface Note {
+  id: number; to: string; kind: string; incident_id: string | null; text: Record<string, string>
+  wall: number; sim: number | null; data: Record<string, unknown>
+}
+export interface CustomerMessage { delivery_id: string; status: Status; place: string; text: string; approved: boolean }

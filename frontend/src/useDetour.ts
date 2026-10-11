@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from './api'
+import { subscribe } from './events'
 import type { AppState, AuditView, Presets } from './types'
 
 export interface Live {
@@ -47,13 +48,11 @@ export function useDetour(): Live {
   }, [refresh, refreshAudit])
 
   useEffect(() => {
-    const es = new EventSource('/events')
-    es.onopen = () => setConnected(true)
-    es.onerror = () => setConnected(false) // EventSource reconnects by itself
-    es.addEventListener('hello', () => { setConnected(true); void refresh(); void refreshAudit() })
-    es.addEventListener('state', () => { void refresh(); api.presets().then(setPresets).catch(() => {}) })
-    es.addEventListener('audit', () => { void refreshAudit() })
-    return () => es.close()
+    return subscribe((type) => {
+      if (type === 'hello') { void refresh(); void refreshAudit() }
+      else if (type === 'state') { void refresh(); api.presets().then(setPresets).catch(() => {}) }
+      else if (type === 'audit') void refreshAudit()
+    }, setConnected)
   }, [refresh, refreshAudit])
 
   return { state, presets, audit, connected, error, refresh, refreshAudit }

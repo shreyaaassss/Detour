@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import type { Status } from '../types'
-import { STATUS_LABEL } from '../labels'
+import type { IncidentState, Status } from '../types'
+import { STATE_LABEL, STATUS_LABEL } from '../labels'
 
 type GlyphName = Status | 'ok' | 'bad' | 'lock' | 'breakdown' | 'closure' | 'urgent'
 
@@ -34,4 +34,13 @@ export function StatusChip({ status, count }: { status: Status; count?: number }
       {count !== undefined && <span className="nums">{count}</span>}
     </span>
   )
+}
+
+const GOOD = new Set<IncidentState>(['COMMITTED'])
+const BAD = new Set<IncidentState>(['EXHAUSTED', 'CANCELLED', 'REJECTED'])
+
+/** Where a rescue stands, in plain words and with a colour that matches how it is going. */
+export function StateChip({ state }: { state: IncidentState }) {
+  const cls = GOOD.has(state) ? 'kept' : BAD.has(state) ? 'broken' : 'moved'
+  return <span className={`chip ${cls}`}>{STATE_LABEL[state]}</span>
 }

@@ -1,4 +1,8 @@
-import type { AppState, AuditView, Disruption, Plan, PreviewResult, Presets, Report } from './types'
+import { setServerTime } from './serverTime'
+import type {
+  AppState, AuditView, CustomerMessage, Disruption, Incident, Note, Offer, Plan, PreviewResult, Presets, Proposal, Report,
+  RescueOverview,
+} from './types'
 
 const ACTOR_KEY = 'detour.actor'
 
@@ -27,10 +31,14 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
     headers: { 'Content-Type': 'application/json', 'X-Actor': getActor() },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
-  const data = await res.json().catch(() => ({}))
+  const data = await res.json().catch(() => null)
+  if (data === null) {
+    throw new ApiError(res.status, 'bad_response', 'The server sent something unexpected. Is the backend running?')
+  }
   if (!res.ok) {
     throw new ApiError(res.status, data.code ?? 'error', data.message ?? res.statusText, data)
   }
+  if (typeof data.server_time === 'number') setServerTime(data.server_time)
   return data as T
 }
 
@@ -44,4 +52,25 @@ export const api = {
     call<AppState>('POST', `/disruptions/${id}/confirm`, { confirmed_by: confirmedBy }),
   validate: (plan?: Plan) => call<Report>('POST', '/validate', plan ? { plan } : undefined),
   audit: (limit = 300) => call<AuditView>('GET', `/audit?limit=${limit}`),
+
+  // rescue
+  overview: () => call<RescueOverview>('GET', '/incidents'),
+  report: (b: { driver: string; transcript?: string; language?: string; location_id?: string; breakdown?: boolean; source?: string }) =>
+    call<{ incident: Incident }>('POST', '/incidents/report', b),
+  confirmReport: (id: string, b: { confirmed?: boolean; location_id?: string }) =>
+    call<{ incident: Incident }>('POST', `/incidents/${id}/confirm`, b),
+  proposal: (id: string) => call<{ proposal: Proposal; state: string }>('GET', `/incidents/${id}/proposal`),
+  approve: (id: string, b: { approved_by: string; shortlist: string[]; proposal_version: number; role: 'head' | 'backup' }) =>
+    call<{ incident: Incident }>('POST', `/incidents/${id}/approve`, b),
+  rejectIncident: (id: string, by: string) => call<{ incident: Incident }>('POST', `/incidents/${id}/reject`, { by }),
+  offers: (driver: string) => call<{ offers: Offer[] }>('GET', `/offers?driver=${encodeURIComponent(driver)}`),
+  respond: (offerId: string, response: 'accept' | 'decline', by?: string) =>
+    call<{ incident: Incident }>('POST', `/offers/${offerId}/respond`, { response, via: 'tap', by }),
+  callEvent: (offerId: string, outcome: string) =>
+    call<{ incident: Incident }>('POST', '/telephony/webhook', { offer_id: offerId, outcome }),
+  notifications: (to: string, after = 0) =>
+    call<{ notifications: Note[] }>('GET', `/notifications?to=${encodeURIComponent(to)}&after=${after}`),
+  setClock: (b: { sim_time?: string; speed?: number }) => call<{ sim: number; speed: number }>('POST', '/clock', b),
+  messages: () => call<{ messages: CustomerMessage[] }>('GET', '/messages'),
+  approveMessage: (deliveryId: string) => call<CustomerMessage>('POST', `/messages/${deliveryId}/approve`),
 }

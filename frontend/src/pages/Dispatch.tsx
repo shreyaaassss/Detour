@@ -7,15 +7,21 @@ import { ComparePanel } from '../components/ComparePanel'
 import { DisruptionPanel } from '../components/DisruptionPanel'
 import { Header } from '../components/Header'
 import { MapView } from '../components/MapView'
+import { MessagesPanel } from '../components/MessagesPanel'
 import { PlanTable } from '../components/PlanTable'
 import { PreviewPanel } from '../components/PreviewPanel'
+import { RescuePanel } from '../components/RescuePanel'
 import type { PreviewResult } from '../types'
 import { useDetour } from '../useDetour'
+import { useLive, useOverview } from '../useRescue'
+import { api as rescueApi } from '../api'
 
-type Tab = 'compare' | 'plan' | 'audit' | 'checks'
+type Tab = 'compare' | 'rescues' | 'messages' | 'plan' | 'audit' | 'checks'
 
 export default function Dispatch() {
   const { state, presets, audit, connected, error, refresh, refreshAudit } = useDetour()
+  const rescue = useOverview()
+  const messages = useLive(() => rescueApi.messages(), ['state'])
   const [tab, setTab] = useState<Tab>('compare')
   const [selected, setSelected] = useState<string | null>(null)
   const [showOriginal, setShowOriginal] = useState(true)
@@ -65,6 +71,8 @@ export default function Dispatch() {
   const counts = diff?.counts
   const tabs: [Tab, string, number | null][] = [
     ['compare', 'What changed', counts ? counts.moved + counts.broken + counts.new : null],
+    ['rescues', 'Rescues', rescue.data?.incidents.filter((i) => !['COMMITTED', 'EXHAUSTED', 'CANCELLED', 'REJECTED'].includes(i.state)).length ?? null],
+    ['messages', 'Messages', messages.data?.messages.filter((m) => !m.approved).length ?? null],
     ['plan', 'Routes', null],
     ['audit', 'Audit log', audit?.total ?? null],
     ['checks', 'Checks', null],
@@ -125,6 +133,8 @@ export default function Dispatch() {
               </div>
               <div className="tabbody" role="tabpanel">
                 {tab === 'compare' && <ComparePanel state={state} />}
+                {tab === 'rescues' && <RescuePanel ov={rescue.data} reload={rescue.reload} />}
+                {tab === 'messages' && <MessagesPanel />}
                 {tab === 'plan' && state.plan && <PlanTable scenario={state.scenario} plan={state.plan} selected={selected} onSelect={setSelected} />}
                 {tab === 'audit' && <AuditPanel audit={audit} onVerify={refreshAudit} />}
                 {tab === 'checks' && <ChecksPanel report={report} onRun={refreshAudit} />}

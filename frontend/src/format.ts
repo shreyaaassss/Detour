@@ -41,3 +41,10 @@ export function vehicleColor(scenario: Scenario, vehicleId: string): string {
   const i = scenario.vehicles.findIndex((v) => v.id === vehicleId)
   return LINE[(i < 0 ? 0 : i) % LINE.length]
 }
+
+/** 1:42 style countdown text. */
+export function mmss(seconds: number | null): string {
+  if (seconds == null) return ''
+  const s = Math.ceil(seconds)
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}

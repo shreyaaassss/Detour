@@ -33,6 +33,10 @@ export function Header({ state, connected, onReset, onChecks, busy }: Props) {
         <small>{state?.as_of != null ? 'plan as of' : 'day starts'}</small>
       </div>
       <div className="spacer" />
+      <nav className="row small" aria-label="Other screens">
+        <a href="/driver" target="_blank" rel="noreferrer">Driver app</a>
+        <a href="/head" target="_blank" rel="noreferrer">Head console</a>
+      </nav>
       {report && (
         <button className={`chip ${report.valid ? 'ok' : 'bad'}`} onClick={onChecks}
           title="Checked by a separate module that shares no code with the planner">
