@@ -1,6 +1,4 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getActor, setActor } from '../api'
 import { hhmm } from '../format'
 import type { AppState } from '../types'
 import { Glyph } from './ui'
@@ -14,7 +12,6 @@ interface Props {
 }
 
 export function Header({ state, connected, onReset, onChecks, busy }: Props) {
-  const [actor, setActorState] = useState(getActor())
   const report = state?.report
   return (
     <header className="topbar">
@@ -34,10 +31,6 @@ export function Header({ state, connected, onReset, onChecks, busy }: Props) {
         <small>{state?.as_of != null ? 'plan as of' : 'day starts'}</small>
       </div>
       <div className="spacer" />
-      <nav className="row small" aria-label="Other screens">
-        <Link to="/driver">Driver app</Link>
-        <Link to="/head">Head console</Link>
-      </nav>
       {report && (
         <button className={`chip ${report.valid ? 'ok' : 'bad'}`} onClick={onChecks}
           title="Checked by a separate module that shares no code with the planner">
@@ -49,11 +42,6 @@ export function Header({ state, connected, onReset, onChecks, busy }: Props) {
         <span className={`dot ${connected ? 'on' : ''}`} />
         {connected ? 'Live' : 'Reconnecting'}
       </span>
-      <label className="actor">
-        Acting as
-        <input type="text" value={actor} aria-label="Your name for the audit log"
-          onChange={(e) => { setActorState(e.target.value); setActor(e.target.value || 'dispatcher') }} />
-      </label>
       <button className="btn" onClick={onReset} disabled={busy}>Reset demo</button>
     </header>
   )

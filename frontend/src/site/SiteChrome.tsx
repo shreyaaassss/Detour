@@ -17,11 +17,6 @@ export function SiteNav() {
     <header className="sitenav">
       <div className="sitenav-in">
         <Wordmark />
-        <nav aria-label="Screens" className="sitelinks">
-          <Link to="/dispatch">Dispatcher</Link>
-          <Link to="/head">Head of logistics</Link>
-          <Link to="/driver?as=Meera">Driver</Link>
-        </nav>
         <span className="grow" />
         <Link to="/dispatch" className="pill">Open the demo</Link>
       </div>
@@ -33,36 +28,9 @@ export function SiteFoot() {
   return (
     <footer className="sitefoot">
       <div className="sitefoot-in">
-        <div className="footgrid">
-          <div>
-            <Wordmark />
-            <p>Replan the day from where the fleet actually is, with a person in charge.</p>
-          </div>
-          <div>
-            <h3>Screens</h3>
-            <ul>
-              <li><Link to="/dispatch">Dispatcher</Link></li>
-              <li><Link to="/head">Head of logistics</Link></li>
-              <li><Link to="/driver?as=Ravi">Stranded driver</Link></li>
-              <li><Link to="/driver?as=Meera">Rescue driver</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h3>The rule</h3>
-            <ul>
-              <li>The engine decides.</li>
-              <li>AI assists.</li>
-              <li>People approve.</li>
-            </ul>
-          </div>
-          <div>
-            <h3>About</h3>
-            <ul>
-              <li>VORTEXA 3.0</li>
-              <li>Problem S-01: ReRoute</li>
-              <li>All data is fictional.</li>
-            </ul>
-          </div>
+        <div className="footline">
+          <Wordmark />
+          <p>The engine decides. AI assists. People approve. VORTEXA 3.0, problem S-01. All data is fictional.</p>
         </div>
       </div>
     </footer>

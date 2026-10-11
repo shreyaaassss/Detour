@@ -381,3 +381,58 @@ a { color: var(--ink); font-weight: 500; text-decoration: underline; text-underl
 .topbar select, .topbar input, .phonebar select, .phonebar input, .topbar textarea { color: var(--ink); }
 
 input[type='checkbox'], input[type='radio'] { accent-color: var(--color-jet-black); }
+
+/* ======== the simple dispatcher: plan, change, compare ======== */
+.app.mvp { grid-template-rows: auto auto minmax(0, 1fr); }
+.mvp .work { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.mvp .tabs { align-items: center; border-bottom: 1px solid var(--line-2); }
+.mvp .tabbody { padding: 20px 24px 40px; }
+.stepper { list-style: none; margin: 0; padding: 10px 18px; display: flex; gap: 8px 28px; flex-wrap: wrap; border-bottom: 1px solid var(--line-2); background: var(--surface); }
+.stepper li { display: inline-flex; align-items: center; gap: 8px; color: var(--color-ash-gray); font-size: 14px; }
+.stepper li span { width: 22px; height: 22px; border-radius: 50%; border: 1px solid currentColor; display: inline-grid; place-items: center; font-size: 12px; }
+.stepper li.past { color: var(--color-slate); }
+.stepper li.now { color: var(--ink); font-weight: 500; }
+.stepper li.now span { background: var(--ink); color: var(--color-paper-white); border-color: var(--ink); }
+
+.lanes { display: grid; gap: 12px; }
+.rl { background: var(--mist); border-radius: var(--radius); padding: 16px 16px 14px; }
+.rl-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 10px; }
+.rl-head b { font-size: 16px; font-weight: 600; }
+.rl-road { position: relative; height: 22px; border-bottom: 2px solid var(--ink); margin-bottom: 12px; }
+.rl-van { position: absolute; bottom: -1px; left: 0; color: var(--ink); line-height: 0; animation: drive 2.2s cubic-bezier(0.3, 0, 0.2, 1) both; }
+@keyframes drive { from { left: 0; } to { left: calc(100% - 28px); } }
+.rl.failed .rl-road { border-bottom-style: dashed; border-bottom-color: var(--color-iron-gray); }
+.rl.failed .rl-van { animation: none; left: 30%; }
+.rl-x { font-size: 18px; line-height: 1; display: block; padding-bottom: 2px; }
+.rl-stops { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.rl-stop { background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--radius); padding: 8px 12px; display: grid; gap: 1px; min-width: 132px; font-size: 13px; color: var(--color-slate); animation: stopin 0.35s ease-out both; }
+@keyframes stopin { from { opacity: 0; transform: translateY(6px); } }
+.rl-stop b { color: var(--ink); font-size: 15px; font-weight: 600; }
+.rl-stop em { font-style: normal; font-size: 12px; font-weight: 500; color: var(--ink); margin-top: 2px; }
+.rl-stop.depot { background: var(--ink); border-color: var(--ink); color: var(--color-ash-gray); min-width: 0; }
+.rl-stop.depot b { color: var(--color-paper-white); }
+.rl-stop.done { opacity: 0.55; }
+.rl-stop.moved { border: 2px solid var(--ink); padding: 7px 11px; }
+.rl-stop.new { border: 2px dashed var(--ink); padding: 7px 11px; }
+.rl-stop.pick b { font-weight: 500; }
+.rl-stop.none { background: transparent; border-style: dashed; }
+.rl.cannot { background: var(--surface); border: 2px solid var(--ink); }
+.rl-cannot { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.how { margin-top: 28px; max-width: 80ch; }
+.how p { margin-bottom: 8px; }
+.how ul { margin: 0; padding-left: 18px; color: var(--color-slate); display: grid; gap: 4px; }
+.timetable { margin-top: 24px; border-top: 1px solid var(--line-2); padding-top: 16px; }
+.timetable > summary { margin-bottom: 12px; }
+.mvp .side { gap: 32px; }
+.mvp .stopchip { padding: 4px 9px; animation: stopin 0.3s ease-out both; }
+@media (max-width: 1100px) { .mvp .work { min-height: 60vh; } .mvp .tabbody { padding: 16px; } }
+
+.steps.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.footline { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+.footline p { color: var(--color-ash-gray); font-size: 14px; margin: 0; }
+.sitefoot-in { padding: 28px 16px; }
+@media (max-width: 900px) { .steps.three { grid-template-columns: 1fr; } }
+
+.whylist { list-style: none; margin: 24px 0 0; padding: 16px 0 0; border-top: 1px solid var(--line-2); display: grid; gap: 10px; }
+.whylist li { display: grid; grid-template-columns: 92px 64px minmax(0, 1fr); gap: 12px; align-items: start; }
+.whylist .reason { max-width: 80ch; }

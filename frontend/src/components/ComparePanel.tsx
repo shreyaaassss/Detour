@@ -6,7 +6,7 @@ import { StatusChip } from './ui'
 const ORDER: Status[] = ['broken', 'moved', 'new', 'kept']
 
 export function ComparePanel({ state }: { state: AppState }) {
-  const [view, setView] = useState<'list' | 'side'>('list')
+  const [view, setView] = useState<'list' | 'side'>('side')
   const [showDone, setShowDone] = useState(false)
   const { diff, scenario, original, plan } = state
   if (!diff || !original || !plan) return <p className="empty">Build a plan first, then change something to see what moves.</p>
@@ -22,6 +22,7 @@ export function ComparePanel({ state }: { state: AppState }) {
     return d ? `${hhmm(d.window_start)}–${hhmm(d.window_end)}` : ''
   }
   const unchanged = state.applied.length === 0
+  const changed = rows.filter((c) => c.status !== 'kept' && !c.completed)
 
   return (
     <div>
@@ -31,8 +32,8 @@ export function ComparePanel({ state }: { state: AppState }) {
         </div>
         <div className="spacer" />
         <div className="row" role="group" aria-label="View">
-          <button className={`btn ${view === 'list' ? 'primary' : ''}`} aria-pressed={view === 'list'} onClick={() => setView('list')}>By delivery</button>
           <button className={`btn ${view === 'side' ? 'primary' : ''}`} aria-pressed={view === 'side'} onClick={() => setView('side')}>Side by side</button>
+          <button className={`btn ${view === 'list' ? 'primary' : ''}`} aria-pressed={view === 'list'} onClick={() => setView('list')}>By delivery, with reasons</button>
         </div>
       </div>
       {unchanged && <p className="muted" style={{ marginBottom: 10 }}>No changes yet. The revised plan matches the original.</p>}
@@ -90,6 +91,17 @@ export function ComparePanel({ state }: { state: AppState }) {
               {col.which === 'old' && <p className="muted small" style={{ marginTop: 8 }}>Faded stops were moved or could not be kept.</p>}
             </div>
           ))}
+          {changed.length > 0 && (
+            <ul className="whylist" style={{ gridColumn: '1 / -1' }} aria-label="Why each delivery changed">
+              {changed.map((c) => (
+                <li key={c.delivery_id}>
+                  <StatusChip status={c.status} />
+                  <b>{c.delivery_id}</b>
+                  <span className="reason">{c.reason}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </div>
