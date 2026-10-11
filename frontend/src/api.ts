@@ -1,7 +1,7 @@
 import { setServerTime } from './serverTime'
 import type {
-  AppState, AuditView, CustomerMessage, Disruption, Incident, Note, Offer, Plan, PreviewResult, Presets, Proposal, Report,
-  RescueOverview,
+  AppState, AuditView, CustomerMessage, Disruption, Incident, Interpreter, Note, Offer, ParseInfo, Plan, PreviewResult, Presets,
+  Proposal, Report, RescueOverview,
 } from './types'
 
 const ACTOR_KEY = 'detour.actor'
@@ -52,6 +52,10 @@ export const api = {
     call<AppState>('POST', `/disruptions/${id}/confirm`, { confirmed_by: confirmedBy }),
   validate: (plan?: Plan) => call<Report>('POST', '/validate', plan ? { plan } : undefined),
   audit: (limit = 300) => call<AuditView>('GET', `/audit?limit=${limit}`),
+
+  parseReport: (text: string, source: 'text' | 'voice' = 'text') =>
+    call<{ parse: ParseInfo; preview: PreviewResult }>('POST', '/disruptions/parse', { text, source }),
+  interpreter: () => call<Interpreter>('GET', '/interpreter'),
 
   // rescue
   overview: () => call<RescueOverview>('GET', '/incidents'),

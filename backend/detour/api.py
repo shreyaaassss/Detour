@@ -19,6 +19,7 @@ from detour.audit import AuditEntry, AuditLog
 from detour.engine.disruptions import Disruption
 from detour.engine.models import Plan, Scenario
 from detour.events import EventBus
+from detour.parsing.llm import Reader
 from detour.rescue.clock import SimClock
 from detour.rescue.routes import build_router
 from detour.rescue.service import RescueConfig, RescueService
@@ -36,6 +37,11 @@ class ConfirmBody(BaseModel):
 
 class PlanBody(BaseModel):
     mode: Literal["auto", "demo", "solve"] = "auto"
+
+
+class ParseBody(BaseModel):
+    text: str
+    source: Literal["text", "voice"] = "text"
 
 
 class ValidateBody(BaseModel):
@@ -61,6 +67,7 @@ def create_app(
     start_demo: bool = True,
     start_ticker: bool = True,
     rescue_config: RescueConfig | None = None,
+    llm: Reader | None = None,
     clock: SimClock | None = None,
     wall=None,
 ) -> FastAPI:
@@ -86,7 +93,7 @@ def create_app(
 
     bus = EventBus()
     audit = AuditLog(audit_path, on_append=lambda e: bus.publish({"type": "audit", "entry": e.model_dump()}))
-    session = Session(audit, bus, clock or SimClock(wall=wall or time.time))
+    session = Session(audit, bus, clock or SimClock(wall=wall or time.time), llm)
     rescue = RescueService(session, rescue_config, **({"wall": wall} if wall else {}))
     app.state.session, app.state.bus, app.state.audit, app.state.rescue = session, bus, audit, rescue
     app.include_router(build_router(session, rescue))
@@ -166,6 +173,15 @@ def create_app(
     @app.post("/disruptions/preview")
     async def preview(body: DisruptionBody, x_actor: str = Header("dispatcher")) -> dict[str, Any]:
         return _preview_json(session.preview(body.disruption, x_actor))
+
+    @app.post("/disruptions/parse")
+    async def parse(body: ParseBody, x_actor: str = Header("dispatcher")) -> dict[str, Any]:
+        res, p = session.interpret(body.text, body.source, x_actor)
+        return {"parse": res.as_dict(), "preview": _preview_json(p)}
+
+    @app.get("/interpreter")
+    async def interpreter() -> dict[str, Any]:
+        return {"mode": "llm" if session.llm else "rules", "model": getattr(session.llm, "model", None)}
 
     @app.post("/disruptions/{preview_id}/confirm")
     async def confirm(preview_id: str, body: ConfirmBody, x_actor: str = Header("dispatcher")) -> dict[str, Any]:

@@ -1,7 +1,7 @@
 # DeTour
 
 Fleet planning and replanning with a voice-driven breakdown rescue flow. VORTEXA 3.0, problem S-01 (ReRoute).
-Spec: [docs/PRD.md](docs/PRD.md). Problem booklet: [docs/](docs/). How the engine models the day: [docs/ENGINE.md](docs/ENGINE.md). API: [docs/API.md](docs/API.md). The rescue flow and demo script: [docs/RESCUE.md](docs/RESCUE.md).
+Spec: [docs/PRD.md](docs/PRD.md). Problem booklet: [docs/](docs/). How the engine models the day: [docs/ENGINE.md](docs/ENGINE.md). API: [docs/API.md](docs/API.md). The rescue flow and demo script: [docs/RESCUE.md](docs/RESCUE.md). Typed reports: [docs/INTERPRETING.md](docs/INTERPRETING.md).
 
 ## Layout
 - `backend/`: FastAPI. Engine, independent validator, incident state machine, audit log.

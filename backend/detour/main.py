@@ -1,7 +1,13 @@
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
 
 from detour.api import create_app, default_audit_path
+from detour.parsing.llm import OpenAIReader
 from detour.rescue.service import RescueConfig
+
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 
 def _config() -> RescueConfig:
@@ -15,4 +21,13 @@ def _config() -> RescueConfig:
     return cfg
 
 
-app = create_app(default_audit_path(), rescue_config=_config())
+def _reader() -> OpenAIReader | None:
+    """The language model that reads typed reports. Without a key, or with DETOUR_LLM=off, the rule-based
+    reader does it alone: everything still works."""
+    key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if not key or os.environ.get("DETOUR_LLM", "auto").lower() == "off":
+        return None
+    return OpenAIReader(key, os.environ.get("OPENAI_MODEL", "gpt-4o-mini"))
+
+
+app = create_app(default_audit_path(), rescue_config=_config(), llm=_reader())

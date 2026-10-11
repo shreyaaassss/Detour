@@ -11,7 +11,7 @@ import { MessagesPanel } from '../components/MessagesPanel'
 import { PlanTable } from '../components/PlanTable'
 import { PreviewPanel } from '../components/PreviewPanel'
 import { RescuePanel } from '../components/RescuePanel'
-import type { PreviewResult } from '../types'
+import type { Disruption, ParseInfo, PreviewResult } from '../types'
 import { useDetour } from '../useDetour'
 import { useLive, useOverview } from '../useRescue'
 import { api as rescueApi } from '../api'
@@ -26,6 +26,8 @@ export default function Dispatch() {
   const [selected, setSelected] = useState<string | null>(null)
   const [showOriginal, setShowOriginal] = useState(true)
   const [pendingPreview, setPreview] = useState<PreviewResult | null>(null)
+  const [parse, setParse] = useState<ParseInfo | null>(null)
+  const [prefill, setPrefill] = useState<Disruption | null>(null)
   const [busy, setBusy] = useState(false)
   const [applyError, setApplyError] = useState<string | null>(null)
 
@@ -40,6 +42,7 @@ export default function Dispatch() {
     try {
       await api.confirm(preview.preview_id, getActor())
       setPreview(null)
+      setParse(null)
       await refresh()
       setTab('compare')
     } catch (e) {
@@ -85,8 +88,10 @@ export default function Dispatch() {
         <aside className="rail" aria-label="Controls">
           {preview
             ? <PreviewPanel preview={preview} scenario={scenario} stale={stale} busy={busy} error={applyError}
-                onApply={apply} onDiscard={() => { setPreview(null); setApplyError(null) }} />
-            : <DisruptionPanel scenario={scenario} presets={presets} now={now} disabled={!plan} onPreview={(p) => { setPreview(p); setApplyError(null) }} />}
+                parse={parse} onApply={apply} onDiscard={() => { setPreview(null); setParse(null); setApplyError(null) }}
+                onEdit={() => { setPrefill(parse?.disruption ?? null); setPreview(null); setParse(null) }} />
+            : <DisruptionPanel key={prefill ? 'edit' : 'new'} scenario={scenario} presets={presets} now={now} disabled={!plan} prefill={prefill}
+                onPreview={(p, info) => { setPreview(p); setParse(info ?? null); setPrefill(null); setApplyError(null) }} />}
 
           {plan && (
             <section className="sec" aria-labelledby="how-h">

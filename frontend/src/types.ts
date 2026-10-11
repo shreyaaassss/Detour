@@ -116,3 +116,11 @@ export interface Note {
   wall: number; sim: number | null; data: Record<string, unknown>
 }
 export interface CustomerMessage { delivery_id: string; status: Status; place: string; text: string; approved: boolean }
+
+export interface ParseInfo {
+  ok: boolean; method: 'llm' | 'rules'; model: string | null; summary: string | null
+  disruption: Disruption | null; warnings: string[]; llm_error: string | null
+  issues: { code: string; message: string; field: string | null }[]
+  known_locations: { id: string; name: string }[]
+}
+export interface Interpreter { mode: 'llm' | 'rules'; model: string | null }

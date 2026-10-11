@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config'
 const backend = process.env.DETOUR_API ?? 'http://localhost:8000'
 const api = [
   'state', 'plan', 'scenario', 'reset', 'presets', 'disruptions', 'validate', 'audit', 'events', 'health',
-  'incidents', 'offers', 'telephony', 'clock', 'notifications', 'messages',
+  'incidents', 'offers', 'telephony', 'clock', 'notifications', 'messages', 'interpreter',
 ]
 
 export default defineConfig({

@@ -235,3 +235,5 @@ textarea { width: 100%; border: 1px solid var(--line); background: var(--surface
 .orderbtns { display: flex; align-items: center; gap: 2px; }
 
 a { color: var(--focus); font-weight: 600; }
+
+.understood { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }

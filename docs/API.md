@@ -13,6 +13,7 @@ Send `X-Actor: <name>` to record who acted (defaults to `dispatcher`). The audit
 | `POST /reset` | Back to the demo scenario and baseline (the audit log keeps its history) |
 | `GET /presets` | The three demo disruptions |
 | `POST /disruptions/preview` `{"disruption": {...}}` | Dry run: revised plan, diff and validator result. Changes nothing |
+| `POST /disruptions/parse` `{text, source}` | Read a report in the dispatcher's own words into a preview, or refuse it with reasons ([how](INTERPRETING.md)). `GET /interpreter` says whether the model is on |
 | `POST /disruptions/{id}/confirm` `{"confirmed_by": "..."}` | Commit exactly the previewed plan. Refused if the plan changed since |
 | `POST /disruptions` `{"disruption": {...}, "confirmed_by": "..."}` | Preview and commit in one call. A disruption with `source` `text` or `voice` needs `confirmed_by` |
 | `POST /validate` `{"plan": {...}}` (optional body) | Run the independent validator on the current plan, or on a supplied one |

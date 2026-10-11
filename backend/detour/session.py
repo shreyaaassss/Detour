@@ -26,6 +26,9 @@ from detour.engine.replan import PlanInvalid, ReplanResult, replan
 from detour.engine.scenario import DEMO_BASELINE, demo_presets, demo_scenario
 from detour.engine.solver import plan_from_sequences, solve
 from detour.events import EventBus
+from detour.parsing.llm import Reader
+from detour.parsing.reader import interpret
+from detour.parsing.types import ParseResult
 from detour.rescue.clock import SimClock
 from detour.validator import Report, validate
 
@@ -61,8 +64,9 @@ def validate_plan(scenario: Scenario, plan: Plan) -> Report:
 
 
 class Session:
-    def __init__(self, audit: AuditLog, bus: EventBus, clock: SimClock | None = None):
+    def __init__(self, audit: AuditLog, bus: EventBus, clock: SimClock | None = None, llm: Reader | None = None):
         self.audit = audit
+        self.llm = llm
         self.bus = bus
         self.clock = clock or SimClock()
         self.listeners: list[Callable[[str], None]] = []
@@ -270,6 +274,38 @@ class Session:
         p = self.compute(d, actor)
         self.commit(p, actor, confirmed_by or actor)
         return p
+
+    def interpret(self, text: str, source: str, actor: str) -> tuple[ParseResult, Preview]:
+        """Read a report written in the dispatcher's own words. It becomes a preview, never a change: the
+        dispatcher still has to confirm it. Anything that cannot be read safely is refused with the reasons."""
+        res = interpret(text, self.scenario, self.incident_time(), self.llm, source)
+        self.log(
+            actor,
+            "report_interpreted",
+            {
+                "text": text[:1000],
+                "source": source,
+                "method": res.method,
+                "model": res.model,
+                "ok": res.ok,
+                "summary": res.summary,
+                "issues": [i.message for i in res.issues],
+                "warnings": res.warnings,
+                "llm_error": res.llm_error,
+            },
+        )
+        if not res.ok or res.disruption is None:
+            first = res.issues[0].message if res.issues else "I could not read that."
+            raise ApiError(
+                422,
+                "cannot_interpret",
+                first,
+                issues=[i.__dict__ for i in res.issues],
+                known_locations=res.known_locations,
+                method=res.method,
+                warnings=res.warnings,
+            )
+        return res, self.preview(res.disruption, actor)
 
     # --- validation and views ---------------------------------------------------------------
     def validate_current(self, actor: str, plan: Plan | None = None) -> Report:
