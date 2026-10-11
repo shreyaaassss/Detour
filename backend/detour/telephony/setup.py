@@ -144,7 +144,7 @@ def agent_body(tool_id: str, name: str, voice_id: str) -> dict[str, Any]:
                 "max_duration_seconds": 150,
                 "dtmf_input_settings": {"dtmf_input_timeout": 1.5, "hash_terminator": False, "redact_input": False},
             },
-            "turn": {"turn_timeout": 7},
+            "turn": {"turn_timeout": 12},
         },
         "platform_settings": {
             "overrides": {"conversation_config_override": {"agent": {"first_message": True, "language": True}}}

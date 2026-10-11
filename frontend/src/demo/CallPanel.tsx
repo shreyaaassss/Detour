@@ -5,7 +5,7 @@ import { hush } from './voice'
 
 type Phase = 'ringing' | 'connecting' | 'live' | 'ended'
 interface Line { who: 'agent' | 'you'; text: string }
-interface Session { sendUserMessage: (t: string) => void; endSession: () => Promise<void>; getId: () => string }
+interface Session { sendUserMessage: (t: string) => void; endSession: () => Promise<void>; getId: () => string; setMicMuted: (m: boolean) => void }
 
 /** The escalation call, held in the browser: a live conversation with the ElevenLabs voice agent. The agent opens
  * with the engine's own script, answers questions only from the engine's facts, and records one clear answer. The
@@ -18,6 +18,15 @@ export function CallPanel({ offer, onChange }: { offer: Offer; onChange: () => v
   const [err, setErr] = useState<string | null>(null)
   const session = useRef<Session | null>(null)
   const secure = window.isSecureContext
+  // Hold to talk: the microphone is closed unless the Talk button is held, and always closed while the agent speaks.
+  // Otherwise the agent hears its own voice from the speakers, or other people in the room, and takes it as an answer.
+  const [hold, setHold] = useState(true)
+  const [talking, setTalking] = useState(false)
+  const release = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const micOpen = phase === 'live' && mode !== 'speaking' && (!hold || talking)
+  useEffect(() => { try { session.current?.setMicMuted(!micOpen) } catch { /* the call has ended */ } }, [micOpen])
+  const startTalk = () => { if (release.current) clearTimeout(release.current); setTalking(true) }
+  const stopTalk = () => { release.current = setTimeout(() => setTalking(false), 350) } // keep the last syllable
 
   useEffect(() => () => { void session.current?.endSession().catch(() => {}) }, [])
 
@@ -42,6 +51,7 @@ export function CallPanel({ offer, onChange }: { offer: Offer; onChange: () => v
         onError: (m: string) => setErr(m),
       })
       session.current = conv as unknown as Session
+      try { session.current.setMicMuted(true) } catch { /* older client */ }
       setPhase('live')
       await api.browserStarted(offer.id, offer.driver, conv.getId())
       onChange()
@@ -62,7 +72,7 @@ export function CallPanel({ offer, onChange }: { offer: Offer; onChange: () => v
         <>
           <div className="call-ring" aria-hidden="true"><span /><span /><span /></div>
           <p className="turn-big">DeTour is calling {offer.driver}.</p>
-          <p className="muted">An automated voice agent. Ask it anything about the job, then say confirm or no.</p>
+          <p className="muted">An automated voice agent. Hold the Talk button to speak: ask it anything about the job, then say confirm or no.</p>
           {secure ? (
             <div className="turn-actions">
               <button className="btn primary big" onClick={() => void answer()}>Answer the call</button>
@@ -78,18 +88,29 @@ export function CallPanel({ offer, onChange }: { offer: Offer; onChange: () => v
       {(phase === 'live' || phase === 'ended') && (
         <>
           <p className="call-state" role="status">
-            {phase === 'ended' ? 'Call ended' : mode === 'speaking' ? 'The agent is speaking' : 'Listening to you'}
+            {phase === 'ended' ? 'Call ended' : mode === 'speaking' ? 'The agent is speaking' : micOpen ? 'Listening to you' : 'Your turn. Hold the button and speak.'}
             {phase === 'live' && <span className={`say-wave ${mode}`} aria-hidden="true"><i /><i /><i /><i /><i /></span>}
           </p>
           <ol className="call-lines" aria-label="Conversation">
             {lines.map((l, i) => <li key={i} className={l.who}><small>{l.who === 'agent' ? 'Agent' : offer.driver}</small>{l.text}</li>)}
           </ol>
           {phase === 'live' && (
-            <div className="turn-actions">
-              <button className="btn primary big" onClick={() => press('1')}>1 · Accept</button>
-              <button className="btn big" onClick={() => press('2')}>2 · Decline</button>
-              <button className="btn quiet" onClick={() => void hangUp()}>Hang up</button>
-            </div>
+            <>
+              {hold && (
+                <button className={`talk ${talking ? 'on' : ''}`} disabled={mode === 'speaking'}
+                  onPointerDown={startTalk} onPointerUp={stopTalk} onPointerLeave={() => talking && stopTalk()} onPointerCancel={stopTalk}
+                  onKeyDown={(e) => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); startTalk() } }}
+                  onKeyUp={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); stopTalk() } }}>
+                  {mode === 'speaking' ? 'Wait for the agent to finish' : talking ? 'Listening… release when done' : 'Hold to talk'}
+                </button>
+              )}
+              <div className="turn-actions">
+                <button className="btn primary big" onClick={() => press('1')}>1 · Accept</button>
+                <button className="btn big" onClick={() => press('2')}>2 · Decline</button>
+                <button className="btn quiet" onClick={() => void hangUp()}>Hang up</button>
+                <label className="check small"><input type="checkbox" checked={!hold} onChange={(e) => setHold(!e.target.checked)} /> Open mic (quiet room, headphones)</label>
+              </div>
+            </>
           )}
         </>
       )}

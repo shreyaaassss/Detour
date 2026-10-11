@@ -732,3 +732,7 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--c-slate); }
 .call-lines li.agent { background: var(--c-water); justify-self: start; border-bottom-left-radius: 4px; }
 .call-lines li.you { background: var(--ink); color: #fff; justify-self: end; border-bottom-right-radius: 4px; }
 @media (prefers-reduced-motion: reduce) { .call-ring span { animation: none; } }
+
+.talk { width: 100%; min-height: 64px; border-radius: var(--radius); border: 2px solid var(--c-orange); background: var(--surface); color: var(--c-orange); font: inherit; font-size: 18px; font-weight: 500; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; transition: background 0.1s ease, color 0.1s ease, transform 0.08s ease; }
+.talk.on { background: var(--c-orange); color: #fff; transform: scale(0.99); }
+.talk:disabled { border-color: var(--color-ash-gray); color: var(--color-iron-gray); cursor: default; }
