@@ -6,7 +6,7 @@ Two pieces: the **server** (Python, on Render, free) and the **website** (static
 
 1. Sign in at render.com with GitHub, then **New > Blueprint** and choose this repository. Render reads `render.yaml`.
 2. Wait for the first deploy. Open `https://<your-service>.onrender.com/health`. It should answer `{"status":"ok",...}`.
-3. Optional settings (Environment tab): `OPENAI_API_KEY` and remove `DETOUR_LLM=off` for the language model; `ELEVENLABS_API_KEY` for voice. Neither is needed.
+3. In the service's **Environment** tab, set `OPENAI_API_KEY` so typed reports are read by the language model (and checked by the rule reader). Without it the rule reader works alone. `ELEVENLABS_API_KEY` is optional, for voice.
 
 Free services sleep when idle, and the first request after that takes up to a minute. Open `/health` a few minutes before showing anyone.
 

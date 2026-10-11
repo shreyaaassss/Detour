@@ -8,7 +8,7 @@ services:
     dockerfilePath: backend/Dockerfile
     healthCheckPath: /health
     envVars:
-      - key: DETOUR_LLM
-        value: "off"        # the rule reader alone is enough; set OPENAI_API_KEY and remove this to use the model too
+      - key: OPENAI_API_KEY
+        sync: false         # set in the Render dashboard, never in this file. Without it the rule reader works alone.
       - key: DETOUR_CALLS
         value: "off"
