@@ -56,7 +56,7 @@ export const api = {
   audit: (limit = 300) => call<AuditView>('GET', `/audit?limit=${limit}`),
 
   parseReport: (text: string, source: 'text' | 'voice' = 'text') =>
-    call<{ parse: ParseInfo; preview: PreviewResult }>('POST', '/disruptions/parse', { text, source }),
+    call<{ parse: ParseInfo; preview: PreviewResult; say_ref?: string }>('POST', '/disruptions/parse', { text, source }),
   interpreter: () => call<Interpreter>('GET', '/interpreter'),
 
   contact: (b: { name: string; email: string; topic: string; message: string }) =>
@@ -64,8 +64,15 @@ export const api = {
 
   // phone line
   telephonyStatus: () => call<TelephonyStatus>('GET', '/telephony/status'),
-  browserSession: (offerId: string, driver: string) =>
-    call<BrowserSession>('POST', `/offers/${offerId}/browser-session`, { driver }),
+  browserSession: (offerId: string, driver: string, language?: 'en' | 'hi' | 'mr') =>
+    call<BrowserSession>('POST', `/offers/${offerId}/browser-session`, { driver, language }),
+  skipWait: (offerId: string) => call<{ incident: Incident }>('POST', `/offers/${offerId}/skip-wait`),
+  transcribe: async (audio: Blob) => {
+    const res = await fetch(`${API_BASE}/voice/transcribe`, { method: 'POST', headers: { 'Content-Type': audio.type || 'audio/webm' }, body: audio })
+    const data = await res.json().catch(() => null)
+    if (!res.ok || !data) throw new ApiError(res.status, data?.code ?? 'error', data?.message ?? 'Could not transcribe that.', data ?? {})
+    return data as { transcript: string }
+  },
   browserStarted: (offerId: string, driver: string, conversationId: string) =>
     call<{ ok: boolean }>('POST', `/offers/${offerId}/browser-session/started`, { driver, conversation_id: conversationId }),
   testCall: (driver?: string) => call<{ started: boolean; language: string }>('POST', '/telephony/test', { driver }),

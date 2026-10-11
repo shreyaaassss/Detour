@@ -10,5 +10,13 @@ services:
     envVars:
       - key: OPENAI_API_KEY
         sync: false         # set in the Render dashboard, never in this file. Without it the rule reader works alone.
+      - key: ELEVENLABS_API_KEY
+        sync: false         # set in the dashboard. Turns on the ElevenLabs voice, speech-to-text and the call agent.
+      - key: ELEVENLABS_AGENT_ID
+        value: agent_5001m4n41j46frftjk4rggt1946b   # an identifier, not a secret: it is useless without the key
       - key: DETOUR_CALLS
-        value: "off"
+        value: "off"        # no phone line: the call is held in the browser
+      - key: DETOUR_DRIVER_CONFIRM
+        value: "120"        # a presenter talks between steps, so the confirmation timers are generous
+      - key: DETOUR_HEAD_RESPONSE
+        value: "900"

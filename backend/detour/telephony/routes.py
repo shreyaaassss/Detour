@@ -27,6 +27,7 @@ class BrowserStarted(BaseModel):
 
 class BrowserOpen(BaseModel):
     driver: str | None = None
+    language: Literal["en", "hi", "mr"] | None = None
 
 
 class TestBody(BaseModel):
@@ -67,7 +68,7 @@ def build_router(s: Session, svc: RescueService, tel: TelephonyService) -> APIRo
     async def browser_session(offer_id: str, body: BrowserOpen | None = None) -> dict[str, Any]:
         """Plan B for the phone line: the driver's page talks to the same call agent through the browser."""
         driver = body.driver if body else None
-        ctx = svc.browser_call_context(offer_id, driver)
+        ctx = svc.browser_call_context(offer_id, driver, body.language if body else None)
         try:
             url = await asyncio.to_thread(tel.browser_session)
         except VoiceError as e:

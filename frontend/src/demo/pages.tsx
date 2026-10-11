@@ -5,6 +5,7 @@ import { Countdown } from '../components/Countdown'
 import { RouteLanes } from '../components/RouteLanes'
 import { StatusChip } from '../components/ui'
 import { hhmm } from '../format'
+import { CallPanel } from './CallPanel'
 import { LINES, useDemo } from './store'
 import { SayBox } from './SayBox'
 
@@ -178,11 +179,22 @@ export function RescuePage() {
               </div>
               {open && d.cfg && <Countdown deadline={o.call_state === 'in_call' ? o.conversation_deadline : o.deadline} total={o.channel === 'call' ? o.deadline - o.sent : d.cfg.push_timeout} label="seconds left" size={88} />}
             </div>
-            {open && (
+            {open && o.channel === 'push' && (
               <div className="turn-actions">
-                <button className="btn primary big" disabled={d.busy} onClick={() => d.answer(o, true)}>{o.channel === 'call' ? 'Answers: confirm' : 'Accept'}</button>
-                <button className="btn big" disabled={d.busy} onClick={() => d.answer(o, false)}>{o.channel === 'call' ? 'Answers: no' : 'Decline'}</button>
+                <button className="btn primary big" disabled={d.busy} onClick={() => d.answer(o, true)}>Accept</button>
+                <button className="btn big" disabled={d.busy} onClick={() => d.answer(o, false)}>Decline</button>
+                <button className="btn quiet" disabled={d.busy} onClick={() => d.skipWait(o)}>Do not answer (skip the 60 seconds)</button>
               </div>
+            )}
+            {open && o.channel === 'call' && (
+              <>
+                {d.voice && <CallPanel offer={o} onChange={d.reload} />}
+                <div className="turn-actions">
+                  <span className="muted small">{d.voice ? 'Or settle the call without speaking:' : 'The voice agent is not set up on this server. Settle the call here:'}</span>
+                  <button className="btn" disabled={d.busy} onClick={() => d.answer(o, true)}>Answers: confirm</button>
+                  <button className="btn" disabled={d.busy} onClick={() => d.answer(o, false)}>Answers: no</button>
+                </div>
+              </>
             )}
           </Card>
         )

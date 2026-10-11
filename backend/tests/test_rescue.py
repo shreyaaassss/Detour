@@ -22,7 +22,7 @@ class Rig:
         self.app = create_app(
             tmp_path / "audit.jsonl",
             start_ticker=False,
-            rescue_config=RescueConfig(**{"browser_ring_timeout": 25.0, **cfg}),
+            rescue_config=RescueConfig(**{"browser_ring_timeout": 25.0, "browser_conversation_limit": 45.0, **cfg}),
             wall=self.wall,
         )
         self.c = TestClient(self.app)
@@ -490,3 +490,23 @@ def test_reset_clears_old_updates_and_ids_keep_rising(tmp_path):
     assert rig.notes("driver:Ravi") == [] and rig.c.get("/incidents").json()["incidents"] == []
     rig.to_head()
     assert min(n["id"] for n in rig.notes("driver:Ravi")) > last  # a screen asking for "newer than N" misses nothing
+
+
+def test_skipping_the_wait_escalates_an_unanswered_offer_at_once(tmp_path):
+    rig = Rig(tmp_path)
+    iid = rig.to_head()
+    rig.approve(iid)
+    off = rig.inc(iid)["active_offer"]
+    r = rig.c.post(f"/offers/{off['id']}/skip-wait")
+    assert r.status_code == 200 and r.json()["incident"]["state"] == "CALL_ESCALATED"
+    assert rig.inc(iid)["active_offer"]["channel"] == "call"
+    assert rig.c.post(f"/offers/{off['id']}/skip-wait").status_code == 409  # it is closed now
+    assert "offer_wait_skipped" in rig.actions()
+
+
+def test_the_voice_speaks_a_recent_answer_by_reference_only(tmp_path):
+    rig = Rig(tmp_path)
+    bad = rig.c.post("/disruptions/parse", json={"text": "the road between Kothrud and Mumbai is closed until 4 pm"})
+    assert bad.status_code == 422 and bad.json()["say_ref"]
+    assert rig.svc.speakable("said", bad.json()["say_ref"], "en") == bad.json()["message"]
+    assert rig.c.get("/voice/audio", params={"what": "said", "ref": "not-a-real-ref"}).status_code == 404

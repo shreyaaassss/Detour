@@ -665,3 +665,70 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--color-jet-blac
   .dtoast { flex-wrap: wrap; }
 }
 @media (prefers-reduced-motion: reduce) { .dnav-item .dot, .dtoast-pulse { animation: none; } }
+
+/* ======== colour: four accents on the white page; the bars, hero and speech bubbles stay black ======== */
+:root {
+  --c-cream: #EBE5D3;   /* Nourished: resting surfaces */
+  --c-orange: #E05320;  /* Pow Orange: the one thing to press, and anything asking for attention */
+  --c-water: #D3D9EB;   /* Link Water: what the system says back */
+  --c-slate: #3B4497;   /* Bright Slate: where you are, and links */
+  --mist: var(--c-cream);
+  --color-faded-teal: var(--c-water);
+  --kept-bg: var(--c-cream);
+}
+/* resting surfaces: cream */
+.fcard, .formcard, .notyet, .rl, .casepanel, .scard, .preview, .where-pill:not(.dark) { background: var(--c-cream); }
+.rl-stop { border-color: #ddd5bd; }
+.vcard:hover { background: var(--c-cream); }
+/* the system's answers: link water */
+.turn.sys { background: var(--c-water); }
+.turn.sys.refuse { background: var(--surface); }
+.turn.sys.good { border-color: var(--c-slate); }
+.show-cands li { background: var(--surface); border-color: var(--c-water); }
+.show-cands li.on { border-color: var(--c-slate); }
+.chip.kept, .chip.ok { background: var(--c-water); color: var(--c-slate); }
+.chip.moved, .stopchip.moved, .rl-stop.moved { border-color: var(--c-slate); color: var(--c-slate); }
+.rl-stop.moved b, .rl-stop.moved em { color: var(--c-slate); }
+.chip.new, .stopchip.new, .rl-stop.new { border-color: var(--c-orange); }
+.say-hint { background: var(--c-water); border-color: var(--c-water); }
+.say-hint:hover:not(:disabled) { border-color: var(--c-slate); }
+/* the thing to press: orange */
+.btn.primary, .btn-black, .btn-white, .say-mic { background: var(--c-orange); border-color: var(--c-orange); color: #fff; font-weight: 500; }
+.btn.primary:hover:not(:disabled), .btn-black:hover, .btn-white:hover { background: #c94718; border-color: #c94718; }
+.topbar .btn.primary { background: var(--c-orange); border-color: var(--c-orange); }
+.say-mic.live { background: var(--surface); color: var(--c-orange); outline-color: var(--c-orange); }
+.say-wave i { background: var(--c-orange); }
+.dot-w, .dtoast-pulse, .dnav-item .dot { background: var(--c-orange); }
+.dnav-item .dot { box-shadow: 0 0 0 0 var(--c-orange); }
+.sitenav .pill { background: var(--c-orange); color: #fff; }
+.dtoast .pill { background: var(--c-orange); color: #fff; }
+input[type='checkbox'], input[type='radio'] { accent-color: var(--c-slate); }
+/* where you are, and links: bright slate */
+.dnav-item.active { background: var(--c-slate); color: var(--c-water); }
+.dnav-item.active small { color: var(--c-water); }
+.dnav-item.active .n { color: var(--c-slate); }
+.dnav-item.done .n { background: var(--c-water); border-color: var(--c-water); color: var(--c-slate); }
+.sitemain a:not([class]), .demo-main a:not([class]), .dnav-foot a, .details { color: var(--c-slate); }
+.stepper li.now span, .show-script li.now .n { background: var(--c-slate); border-color: var(--c-slate); }
+.stepn, .facts dt { color: var(--c-slate); }
+.facts > div, .steps li { border-top-color: var(--c-slate); }
+.tab[aria-selected='true'], .tabstrip button[aria-selected='true'] { background: var(--c-water); color: var(--c-slate); }
+.seg button[aria-pressed='true'] { background: var(--c-slate); color: #fff; }
+.phonebar .seg button[aria-pressed='true'] { background: var(--color-paper-white); color: var(--color-jet-black); }
+:focus-visible { outline-color: var(--c-slate); }
+
+/* ======== the call ======== */
+.call { background: var(--surface); border-radius: var(--radius); padding: 18px; display: grid; gap: 10px; border: 2px solid var(--c-slate); }
+.call-ring { display: flex; gap: 6px; height: 14px; }
+.call-ring span { width: 14px; height: 14px; border-radius: 50%; background: var(--c-orange); animation: ring 1.2s ease-in-out infinite; }
+.call-ring span:nth-child(2) { animation-delay: 0.18s; } .call-ring span:nth-child(3) { animation-delay: 0.36s; }
+@keyframes ring { 0%, 100% { transform: scale(0.5); opacity: 0.4; } 50% { transform: scale(1); opacity: 1; } }
+.call-state { display: flex; gap: 12px; align-items: center; font-weight: 500; color: var(--c-slate); }
+.call-state .say-wave { padding-left: 0; }
+.call-state .say-wave.listening i { background: var(--c-slate); }
+.call-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 320px; overflow-y: auto; }
+.call-lines li { padding: 10px 14px; border-radius: 14px; font-size: 16px; line-height: 1.4; max-width: 88%; animation: turnin 0.3s ease-out both; }
+.call-lines li small { display: block; font-size: 12px; opacity: 0.75; margin-bottom: 2px; }
+.call-lines li.agent { background: var(--c-water); justify-self: start; border-bottom-left-radius: 4px; }
+.call-lines li.you { background: var(--ink); color: #fff; justify-self: end; border-bottom-right-radius: 4px; }
+@media (prefers-reduced-motion: reduce) { .call-ring span { animation: none; } }

@@ -6,6 +6,7 @@ publishes a state event so connected screens refresh.
 
 from __future__ import annotations
 
+import hashlib
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -70,6 +71,7 @@ class Session:
         self.bus = bus
         self.clock = clock or SimClock()
         self.listeners: list[Callable[[str], None]] = []
+        self.sayings: dict[str, str] = {}  # recent sentences the system produced, by reference
         self.version = 0
         self.kind = "demo"
         self.base_scenario: Scenario = demo_scenario()
@@ -86,6 +88,14 @@ class Session:
     @property
     def sim_time(self) -> float | None:
         return self.plan.as_of if self.plan else None
+
+    def remember(self, text: str) -> str:
+        """Keep a sentence the system itself produced, so the voice can speak it by reference (never free text)."""
+        ref = hashlib.sha1(text.encode()).hexdigest()[:16]
+        self.sayings[ref] = text
+        while len(self.sayings) > 60:
+            self.sayings.pop(next(iter(self.sayings)))
+        return ref
 
     def log(self, actor: str, action: str, details: dict[str, Any] | None = None) -> None:
         self.audit.append(actor, action, details, self.sim_time)

@@ -127,7 +127,10 @@ def create_app(
 
     @app.exception_handler(ApiError)
     async def _api_error(_: Request, e: ApiError) -> JSONResponse:
-        return JSONResponse({"code": e.code, "message": e.message, **e.extra}, status_code=e.status)
+        body = {"code": e.code, "message": e.message, **e.extra}
+        if e.code == "cannot_interpret":  # a refusal the dispatcher should hear as well as read
+            body["say_ref"] = session.remember(e.message)
+        return JSONResponse(body, status_code=e.status)
 
     @app.exception_handler(ValidationError)
     async def _validation_error(_: Request, e: ValidationError) -> JSONResponse:
@@ -223,7 +226,8 @@ def create_app(
     @app.post("/disruptions/parse")
     async def parse(body: ParseBody, x_actor: str = Header("dispatcher")) -> dict[str, Any]:
         res, p = session.interpret(body.text, body.source, x_actor)
-        return {"parse": res.as_dict(), "preview": _preview_json(p)}
+        out = res.as_dict()
+        return {"parse": out, "preview": _preview_json(p), "say_ref": session.remember(out.get("summary") or p.cause)}
 
     @app.get("/interpreter")
     async def interpreter() -> dict[str, Any]:

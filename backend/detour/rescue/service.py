@@ -40,6 +40,7 @@ class RescueConfig:
     driver_confirm: float = 30.0
     head_response: float = 120.0
     ring_timeout: float = 25.0  # a phone that rings
+    browser_conversation_limit: float = 150.0  # a browser call may include questions and answers
     browser_ring_timeout: float = 60.0  # no phone line: a person has to read the card, tap and allow the microphone
     conversation_limit: float = 45.0
     max_shortlist: int = 3
@@ -449,6 +450,19 @@ class RescueService:
             raise ApiError(422, "bad_response", "Respond with accept or decline.")
         return inc
 
+    def skip_wait(self, offer_id: str) -> Incident:
+        """A presenter's shortcut: treat an unanswered app offer as if its time had already run out."""
+        off = self.offers.get(offer_id)
+        if off is None:
+            raise ApiError(404, "unknown_offer", f"no offer {offer_id}")
+        inc = self._get(off.incident_id)
+        if off.channel != "push" or off.status != "open":
+            raise ApiError(409, "offer_closed", "This offer is closed. Nothing was changed.")
+        self._log("presenter", "offer_wait_skipped", {"incident": inc.id, "offer": off.id})
+        off.deadline = self.wall()
+        self.tick()
+        return inc
+
     def telephony_event(self, offer_id: str, outcome: str, how: str | None = None) -> Incident:
         """What a phone call reports back. The real provider (or the simulate buttons) calls this."""
         off = self.offers.get(offer_id)
@@ -473,7 +487,9 @@ class RescueService:
         self._log("telephony", "call_event", {"incident": inc.id, "offer": off.id, "outcome": outcome, "how": how})
         if outcome == "answered":
             off.call_state = "in_call"
-            off.conversation_deadline = self.wall() + self.cfg.conversation_limit
+            line = self.calls is not None and self.calls.ready()
+            talk = self.cfg.conversation_limit if line else self.cfg.browser_conversation_limit
+            off.conversation_deadline = self.wall() + talk
             self._publish("incident", id=inc.id, state=inc.state)
         elif outcome == "confirmed":
             self._accept(inc, off, "call", who, how)
@@ -793,14 +809,28 @@ class RescueService:
             {"incident": inc.id, "offer": call.id, "driver": call.driver, "language": lang},
         )
 
-    def _call_context(self, inc: Incident, call: Offer, tel: Any) -> dict[str, Any]:
+    def _call_context(self, inc: Incident, call: Offer, tel: Any, language: str | None = None) -> dict[str, Any]:
         """What the call agent is told: the engine's own script, in the call language, and the facts it may repeat."""
-        lang = tel.language_for(call.language)
+        lang = language or tel.language_for(call.language)
         plain = {k: (v.get(lang, v["en"]) if isinstance(v, dict) else v) for k, v in self._facts(inc).items()}
+        cand = next(
+            (c for c in (inc.proposal.candidates if inc.proposal else []) if c.vehicle_id == call.vehicle_id), None
+        )
+        when = lambda t: hhmm(t) if t is not None else "not known"  # noqa: E731
+        others = [p for p in inc.parcels if p != inc.primary]
+        extra = {
+            "driver": call.driver or "",
+            "offer_id": call.id,
+            "stranded_driver": inc.driver,
+            "reach": when(cand.reach_site if cand else None),
+            "leave": when(cand.leave_site if cand else None),
+            "deliver": when(cand.delivery_time if cand else None),
+            "other_parcels": ", ".join(others) or "none",
+        }
         return {
             "first_message": call.script.get(lang) or call.script["en"],
             "language": lang,
-            "variables": {**plain, "driver": call.driver or "", "offer_id": call.id},
+            "variables": {**plain, **extra},
         }
 
     def _open_call(self, offer_id: str, driver: str | None) -> tuple[Incident, Offer]:
@@ -814,11 +844,11 @@ class RescueService:
             raise ApiError(403, "not_your_call", "This call is for another driver.")
         return inc, off
 
-    def browser_call_context(self, offer_id: str, driver: str | None) -> dict[str, Any]:
+    def browser_call_context(self, offer_id: str, driver: str | None, language: str | None = None) -> dict[str, Any]:
         """The script and facts for a voice conversation held in the driver's own browser."""
         inc, off = self._open_call(offer_id, driver)
         assert self.calls is not None
-        return self._call_context(inc, off, self.calls)
+        return self._call_context(inc, off, self.calls, language)
 
     def browser_call_started(self, offer_id: str, driver: str | None, conversation_id: str) -> None:
         """The driver's browser connected to the call agent: the call is answered, and we follow it to its outcome."""
@@ -864,11 +894,13 @@ class RescueService:
         elif what == "offer":
             off = self.offers.get(ref)
             text = off.text.get(lang) if off else None
+        elif what == "said":
+            text = self.s.sayings.get(ref)
         elif what == "note":
             n = next((x for x in self.notes if str(x.id) == ref), None)
             text = n.text.get(lang) if n else None
         else:
-            raise ApiError(422, "bad_kind", "Voice can speak a readback, an offer or a note.")
+            raise ApiError(422, "bad_kind", "Voice can speak a readback, an offer, a note or a recent answer.")
         if not text:
             raise ApiError(404, "nothing_to_say", "There is nothing to say for that.")
         return text

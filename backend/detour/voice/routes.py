@@ -89,6 +89,23 @@ def build_router(s: Session, svc: RescueService, voice: VoiceService) -> APIRout
             "incident": svc.incident_view(inc),
         }
 
+    @r.post("/voice/transcribe")
+    async def transcribe(request: Request) -> dict[str, Any]:
+        """Speech to text for anything a person says to the system. The audio is not kept."""
+        data = await request.body()
+        if len(data) > MAX_AUDIO:
+            raise ApiError(413, "audio_too_large", "That recording is too long. Keep it to a few seconds.")
+        if len(data) < 800:
+            raise ApiError(422, "nothing_heard", "I could not hear anything. Try again, or type it.")
+        try:
+            tr = await asyncio.to_thread(voice.transcribe, data, request.headers.get("content-type", ""))
+        except VoiceError as e:
+            raise ApiError(503, e.code, e.message) from e
+        if not tr.text:
+            raise ApiError(422, "nothing_heard", "I could not hear anything. Try again, or type it.")
+        s.log("voice", "voice_transcribed", {"engine": "elevenlabs", "chars": len(tr.text), "audio_bytes": len(data)})
+        return {"transcript": tr.text, "detected_language": FROM_CODE.get(tr.language or "")}
+
     @r.post("/voice/warm")
     async def prepare(everyone: bool = False) -> dict[str, Any]:
         if not voice.enabled:

@@ -4,7 +4,7 @@ import type { Incident } from '../types'
 import { useDetour } from '../useDetour'
 import { useOverview } from '../useRescue'
 import { Ctx, ENDED, KEY, OFFERING, type Demo, type DispatchTurn, type Phase } from './store'
-import { setVoice, speak } from './voice'
+import { hush, setVoice, speak, voiceReady, type SayRef } from './voice'
 
 function stored(): { id?: string; said?: string; seen?: boolean } {
   try { return JSON.parse(sessionStorage.getItem(KEY) ?? '{}') } catch { return {} }
@@ -49,7 +49,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const clear = useCallback(() => {
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+    hush()
     spoken.current.clear()
     setMineId(null); setFresh(null); setSaid(null); setPicks(null); setTurns([]); setSeen(false)
   }, [])
@@ -67,14 +67,16 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     })()
   }, [ready, clear, refresh, overview])
 
-  const sayOnce = useCallback((key: string, text: string | undefined | null) => {
+  const sayOnce = useCallback((key: string, text: string | undefined | null, ref?: SayRef) => {
     if (!text || spoken.current.has(key)) return
-    spoken.current.add(key); speak(text)
+    spoken.current.add(key); speak(text, ref)
   }, [])
+  const [voice, setVoiceOn] = useState(false) // does the server have the ElevenLabs voice and agent?
+  useEffect(() => { void voiceReady().then(setVoiceOn) }, [])
   useEffect(() => {
     if (!incident) return
-    if (incident.state === 'REPORTED') sayOnce(`rb-${incident.id}`, incident.readback.en)
-    if (offer?.channel === 'push') sayOnce(`of-${offer.id}`, `${offer.driver}. ${offer.text.en}`)
+    if (incident.state === 'REPORTED') sayOnce(`rb-${incident.id}`, incident.readback.en, { what: 'readback', ref: incident.id })
+    if (offer?.channel === 'push') sayOnce(`of-${offer.id}`, offer.text.en, { what: 'offer', ref: offer.id })
     if (incident.state === 'COMMITTED') sayOnce(`ok-${incident.id}`, 'Rescue committed. The plan has been updated.')
   }, [incident, offer, sayOnce])
 
@@ -85,7 +87,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     loading: ready && state ? null : loadError ? 'Waking the server. This can take up to a minute the first time.' : 'Setting up the day.',
     cfg: overview.data?.config, incident, proposal, feasible, chosen, setPicks, offer, phase, said, turns, seenChanges,
     markChangesSeen: () => setSeen(true),
-    busy, error, clearError: () => setError(null), sound,
+    busy, error, clearError: () => setError(null), sound, voice,
     setSound: (v) => { setSoundState(v); setVoice(v) },
     report: (text, locationId) => void act(async () => {
       setSaid(text); setPicks(null)
@@ -109,16 +111,19 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         : await api.respond(o.id, yes ? 'accept' : 'decline', o.driver ?? undefined)
       took(r.incident); await refresh()
     }),
+    skipWait: (o) => void act(async () => { took((await api.skipWait(o.id)).incident) }),
+    reload: () => { overview.reload(); void refresh() },
     dispatchSay: (text) => void act(async () => {
       const id = ++turnId.current
       try {
         const r = await api.parseReport(text)
         setTurns((t) => [...t.map((x) => (x.preview && !x.applied ? { ...x, discarded: true } : x)), { id, text, parse: r.parse, preview: r.preview }])
-        speak(`${r.parse.summary ?? 'Understood.'} Please confirm.`)
+        speak(r.parse.summary ?? 'Understood. Please confirm.', r.say_ref ? { what: 'said', ref: r.say_ref } : undefined)
       } catch (e) {
         if (!(e instanceof ApiError) || e.status !== 422) throw e
         setTurns((t) => [...t, { id, text, refusal: e.message }])
-        speak(e.message)
+        const ref = typeof e.extra.say_ref === 'string' ? e.extra.say_ref : null
+        speak(e.message, ref ? { what: 'said', ref } : undefined)
       }
     }),
     urgent: () => void act(async () => {

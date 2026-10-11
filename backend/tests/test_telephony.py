@@ -694,7 +694,8 @@ def test_the_agent_is_built_to_take_one_clear_answer_by_voice_or_keypad():
     cc = body["conversation_config"]
     assert cc["agent"]["language"] == "hi" and cc["agent"]["prompt"]["tool_ids"] == ["tool_1"]
     assert cc["conversation"]["dtmf_input_settings"]["hash_terminator"] is False  # a lone 1 or 2 must be enough
-    assert cc["conversation"]["max_duration_seconds"] <= 60
+    assert cc["conversation"]["max_duration_seconds"] <= 150  # long enough to answer a few questions
+    assert set(cc["language_presets"]) == {"en", "mr"}
     end = cc["agent"]["prompt"]["built_in_tools"]["end_call"]
     assert end["name"] == "end_call" and end["params"]["system_tool_type"] == "end_call"
     ov = body["platform_settings"]["overrides"]["conversation_config_override"]["agent"]
@@ -706,6 +707,8 @@ def test_the_agent_is_built_to_take_one_clear_answer_by_voice_or_keypad():
         "never ask a third time".capitalize()[:0] or "third time",
         "Never reveal",
         "EXACTLY one of these two sentences",
+        "the ONLY facts you know",
+        "do not have that information",
     ):
         assert needle in INSTRUCTIONS, needle
 

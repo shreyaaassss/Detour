@@ -40,8 +40,8 @@ export function HeroMap() {
       </g>
 
       {/* the rescue: from Viman Nagar to the broken-down van, then on to the clinic */}
-      <path d={RESCUE} fill="none" stroke="#9dcdd6" strokeWidth="9" opacity="0.14" strokeLinejoin="round" strokeLinecap="round" />
-      <path d={RESCUE} className="map-route" pathLength={1} fill="none" stroke="#9dcdd6" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+      <path d={RESCUE} fill="none" stroke="#E05320" strokeWidth="9" opacity="0.14" strokeLinejoin="round" strokeLinecap="round" />
+      <path d={RESCUE} className="map-route" pathLength={1} fill="none" stroke="#E05320" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
       <circle r="6" fill="#ffffff" className="map-van" style={{ offsetPath: `path('${RESCUE}')` }} />
 
       {PLACES.map(([x, y, name, side]) => (

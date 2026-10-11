@@ -21,9 +21,9 @@ export interface Demo {
   state: AppState | null; loading: string | null; cfg: RescueConfig | undefined
   incident: Incident | null; proposal: Proposal | null; feasible: Candidate[]; chosen: string[]; setPicks: (v: string[]) => void
   offer: Offer | null; phase: Phase; said: string | null; turns: DispatchTurn[]; seenChanges: boolean; markChangesSeen: () => void
-  busy: boolean; error: string | null; clearError: () => void; sound: boolean; setSound: (v: boolean) => void
+  busy: boolean; error: string | null; clearError: () => void; sound: boolean; voice: boolean; setSound: (v: boolean) => void
   report: (text: string, locationId?: string) => void; confirmReport: (yes: boolean) => void; approve: () => void
-  answer: (o: Offer, yes: boolean) => void; dispatchSay: (text: string) => void; urgent: () => void
+  answer: (o: Offer, yes: boolean) => void; skipWait: (o: Offer) => void; reload: () => void; dispatchSay: (text: string) => void; urgent: () => void
   settle: (t: DispatchTurn, apply: boolean) => void; restart: () => void
 }
 

@@ -101,6 +101,11 @@ def build_router(s: Session, svc: RescueService) -> APIRouter:
         inc = svc.respond(offer_id, body.response, body.via, body.by)
         return {"server_time": svc.wall(), "incident": svc.incident_view(inc)}
 
+    @r.post("/offers/{offer_id}/skip-wait")
+    async def skip_wait(offer_id: str) -> dict[str, Any]:
+        inc = svc.skip_wait(offer_id)
+        return {"server_time": svc.wall(), "incident": svc.incident_view(inc)}
+
     @r.post("/telephony/webhook")
     async def webhook(body: CallBody) -> dict[str, Any]:
         inc = svc.telephony_event(body.offer_id, body.outcome)
