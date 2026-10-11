@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, ApiError } from '../api'
 import type { Offer } from '../types'
+import { decide } from './decision'
 import { hush } from './voice'
 
 type Phase = 'ringing' | 'connecting' | 'live' | 'ended'
@@ -39,6 +40,14 @@ export function CallPanel({ offer, busy, onChange, onSettle }: { offer: Offer; b
     return () => { clearInterval(tick); clearTimeout(late) }
   }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // A clear yes or no settles the rescue at once, by rule. The agent talks; it does not get to decide.
+  const settled = useRef(false)
+  function settle(yes: boolean) {
+    if (settled.current) return
+    settled.current = true
+    onSettle(yes)
+  }
+
   async function answer() {
     if (!offer.driver) return
     setErr(null); setPhase('connecting'); hush()
@@ -54,7 +63,13 @@ export function CallPanel({ offer, busy, onChange, onSettle }: { offer: Offer; b
         overrides: { agent: { firstMessage: cfg.first_message, language: cfg.language as 'hi' | 'mr' | 'en' } },
         onModeChange: (m: { mode: string }) => setMode(m.mode === 'speaking' ? 'speaking' : 'listening'),
         onMessage: (m: { message: string; source: string }) => {
-          if (m.message?.trim()) setLines((l) => [...l, { who: m.source === 'user' ? 'you' : 'agent', text: m.message.trim() }])
+          const text = m.message?.trim()
+          if (!text) return
+          setLines((l) => [...l, { who: m.source === 'user' ? 'you' : 'agent', text }])
+          if (m.source === 'user') {
+            const d = decide(text)
+            if (d) settle(d === 'confirmed')
+          }
         },
         onDisconnect: () => { session.current = null; setPhase('ended'); onChange() },
         onError: (m: string) => setErr(m),
@@ -70,8 +85,8 @@ export function CallPanel({ offer, busy, onChange, onSettle }: { offer: Offer; b
     }
   }
   function press(n: '1' | '2') {
-    session.current?.sendUserMessage(n)
     setLines((l) => [...l, { who: 'you', text: n === '1' ? 'Pressed 1 (accept)' : 'Pressed 2 (decline)' }])
+    settle(n === '1')
   }
   async function hangUp() { try { await session.current?.endSession() } catch { /* already gone */ } setPhase('ended'); onChange() }
 

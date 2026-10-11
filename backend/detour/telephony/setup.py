@@ -46,6 +46,8 @@ How the driver may answer:
 - To accept: says confirm (कन्फर्म, हाँ, ठीक है, स्वीकार, ले लूँगा, yes, okay, I accept) or presses 1.
 - To decline: says no (नहीं, मना, नहीं कर सकता, I cannot) or presses 2.
 - A keypad press reaches you as a message that is only "1" or "2". Treat 1 as accept and 2 as decline.
+- The driver may answer in a different language from the call. The English words "confirm", "yes" or "okay" are a clear
+  accept, and "no" is a clear decline, even on a Hindi or Marathi call. A single clear word is enough: never call it unclear.
 
 What to do:
 1. If the answer is clear, call the tool report_decision with decision "confirmed" or "declined" and method "voice" or "keypad".
