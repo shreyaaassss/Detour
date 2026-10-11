@@ -18,7 +18,7 @@ export function SiteNav() {
       <div className="sitenav-in">
         <Wordmark />
         <span className="grow" />
-        <Link to="/dispatch" className="pill">Open the demo</Link>
+        <Link to="/demo" className="pill">Start the demo</Link>
       </div>
     </header>
   )

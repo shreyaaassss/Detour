@@ -19,7 +19,8 @@ export default function Landing() {
             <h1 className="display">Replan the day from where the fleet is.</h1>
             <p className="lede">A road slows, a van breaks down, an urgent parcel arrives. DeTour fixes the plan without undoing what is already done, proves the result is valid, and explains every change.</p>
             <div className="ctas">
-              <Link to="/dispatch" className="btn-black">Open the dispatcher</Link>
+              <Link to="/demo" className="btn-black">Start the guided demo</Link>
+              <Link to="/dispatch" className="btn-line">Open the dispatcher</Link>
             </div>
           </div>
           <div className="mapframe"><HeroMap /></div>
