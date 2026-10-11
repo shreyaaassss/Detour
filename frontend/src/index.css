@@ -741,3 +741,39 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--c-slate); }
 .history li::before { content: '– '; }
 .turn-actions a.btn { text-decoration: none; }
 .turn-actions .grow { flex: 1; }
+
+/* ======== what changed, as tiles ======== */
+.tiles { display: grid; gap: 16px; }
+.tile-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.tile-row.sum { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.tile-row.mini { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.tile { border-radius: var(--radius); padding: 20px; animation: stopin 0.35s ease-out both; }
+.tile-h { font-size: 18px; font-weight: 500; margin: 16px 0 0; }
+.sum-tile { display: grid; gap: 2px; }
+.sum-tile .num { font-size: 52px; line-height: 1.1; font-weight: 400; letter-spacing: -0.02em; }
+.sum-tile .lab { display: inline-flex; gap: 6px; align-items: center; font-size: 18px; font-weight: 500; }
+.sum-tile .say { font-size: 14px; opacity: 0.85; }
+.sum-tile.kept { background: var(--c-water); color: var(--c-slate); }
+.sum-tile.moved { background: var(--c-cream); color: var(--ink); }
+.sum-tile.broken { background: var(--ink); color: #fff; }
+.sum-tile.new { background: var(--surface); color: var(--ink); border: 2px dashed var(--c-orange); padding: 18px; }
+.tile.chg { background: var(--c-cream); display: grid; gap: 10px; align-content: start; }
+.tile.chg.broken { background: var(--surface); border: 2px solid var(--ink); padding: 18px; }
+.tile.chg.new { background: var(--surface); border: 2px dashed var(--c-orange); padding: 18px; }
+.tile.chg header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.tile.chg .id { font-size: 28px; font-weight: 500; line-height: 1; }
+.tile.chg .to { font-size: 14px; color: var(--color-slate); }
+.swap { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: center; background: var(--surface); border-radius: var(--radius); padding: 12px; }
+.tile.chg.broken .swap, .tile.chg.new .swap { background: var(--c-cream); }
+.swap > div { display: grid; gap: 1px; }
+.swap small { font-size: 12px; color: var(--color-slate); }
+.swap b { font-size: 15px; font-weight: 500; }
+.swap span { font-size: 15px; }
+.swap .was b, .swap .was span { color: var(--color-slate); }
+.swap .arrow { font-size: 20px; color: var(--c-slate); }
+.tile.chg .why { font-size: 14px; line-height: 1.5; color: var(--color-charcoal); }
+.mini-tile { background: var(--surface); border: 1px solid var(--c-water); padding: 10px 12px; display: grid; gap: 1px; font-size: 13px; color: var(--color-slate); }
+.mini-tile b { font-size: 15px; color: var(--ink); font-weight: 500; }
+.mini-tile.done { opacity: 0.6; }
+.fullcompare { margin-top: 12px; border-top: 1px solid var(--line-2); padding-top: 16px; }
+.fullcompare > summary { margin-bottom: 16px; color: var(--c-slate); }

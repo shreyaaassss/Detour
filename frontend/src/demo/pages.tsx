@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { ComparePanel } from '../components/ComparePanel'
+import { ChangeTiles } from '../components/ChangeTiles'
 import { Countdown } from '../components/Countdown'
 import { RouteLanes } from '../components/RouteLanes'
 import { StatusChip } from '../components/ui'
@@ -235,9 +235,9 @@ export function ChangesPage() {
   return (
     <section className="show-scene">
       <Head who="Dispatcher's board" title="What changed, and why">
-        Every delivery is kept, moved or broken, with a reason the dispatcher can give a customer. Completed stops stay fixed, and a failed vehicle gets no stops after it failed.
+        The plan before and after. Every delivery is kept, moved or broken, and each change comes with a reason the dispatcher can give the customer.
       </Head>
-      <ComparePanel key={s.version} state={s} />
+      <ChangeTiles key={s.version} state={s} />
     </section>
   )
 }
@@ -291,7 +291,7 @@ export function DispatcherPage() {
         <SayBox suggestions={[LINES.unknown, LINES.closure]} busy={d.busy} placeholder="Speak, or type what changed" onSay={d.dispatchSay} fix={(t) => snapPlaces(t, d.places)} />
         <button className="btn" disabled={d.busy} onClick={d.urgent}>Add urgent delivery D13</button>
       </div>
-      {applied && <div className="turn wide"><ComparePanel key={s.version} state={s} /></div>}
+      {applied && <div className="turn wide"><ChangeTiles key={s.version} state={s} /></div>}
     </section>
   )
 }
