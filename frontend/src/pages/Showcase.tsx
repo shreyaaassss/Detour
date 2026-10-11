@@ -150,11 +150,26 @@ export default function Showcase() {
   const runStep = useCallback(async (i: number, d: Data) => {
     setBusy(true); setError(null)
     try {
-      const patch = await withWake(() => STEPS[i].run(d), setWaiting)
-      setData(i === 0 ? { ...patch } : { ...d, ...patch })
+      let patch: Partial<Data>
+      let base = d
+      try {
+        patch = await withWake(() => STEPS[i].run(d), setWaiting)
+      } catch (e) {
+        // The server lost the story so far (it restarted, or someone else reset the shared demo). The script is
+        // fixed, so replay it from the start up to this step, then carry on. Anything else is a real error.
+        const lost = e instanceof ApiError && [404, 409, 410].includes(e.status)
+        if (!lost || i === 0) throw e
+        setWaiting('Catching up. The demo was reset elsewhere, so the earlier steps are being replayed.')
+        base = {}
+        for (let k = 0; k < i; k++) base = { ...(k === 0 ? {} : base), ...(await withWake(() => STEPS[k].run(base), () => {})) }
+        patch = await STEPS[i].run(base)
+        setWaiting(null)
+      }
+      setData(i === 0 ? { ...patch } : { ...base, ...patch })
       setDone(i + 1)
       stage.current?.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (e) {
+      setWaiting(null)
       setError(e instanceof ApiError ? e.message : 'Could not reach the server.')
     } finally {
       setBusy(false)
