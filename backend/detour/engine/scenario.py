@@ -99,25 +99,25 @@ def demo_scenario() -> Scenario:
     Locations are placed so that, at 14:05, the four candidate rescuers are 10, 15, 18 and 27
     minutes from Hadapsar, and Hadapsar to Kothrud Clinic is 30 minutes (PRD section 7)."""
     locs = [
-        Location(id="depot", name="Swargate Depot", x=50, y=30),
-        Location(id="hadapsar", name="Hadapsar", x=78, y=40),
-        Location(id="kothrud", name="Kothrud Clinic", x=18, y=50),
-        Location(id="aundh", name="Aundh", x=30, y=72),
-        Location(id="baner", name="Baner", x=20, y=85),
-        Location(id="wanowrie", name="Wanowrie", x=58, y=40),
-        Location(id="kondhwa", name="Kondhwa", x=48, y=40),
-        Location(id="katraj", name="Katraj", x=42, y=40),
-        Location(id="shivaji", name="Shivajinagar", x=24, y=40),
-        Location(id="viman", name="Viman Nagar", x=80, y=78),
-        Location(id="kharadi", name="Kharadi", x=95, y=68),
-        Location(id="camp", name="Camp", x=62, y=48),
+        Location(id="depot", name="Swargate Depot", x=50, y=30, aliases=["स्वारगेट"]),
+        Location(id="hadapsar", name="Hadapsar", x=78, y=40, aliases=["हडपसर", "हड़पसर"]),
+        Location(id="kothrud", name="Kothrud Clinic", x=18, y=50, aliases=["Kothrud", "कोथरूड", "कोथरुड"]),
+        Location(id="aundh", name="Aundh", x=30, y=72, aliases=["औंध"]),
+        Location(id="baner", name="Baner", x=20, y=85, aliases=["बाणेर"]),
+        Location(id="wanowrie", name="Wanowrie", x=58, y=40, aliases=["वानवडी"]),
+        Location(id="kondhwa", name="Kondhwa", x=48, y=40, aliases=["कोंढवा"]),
+        Location(id="katraj", name="Katraj", x=42, y=40, aliases=["कात्रज"]),
+        Location(id="shivaji", name="Shivajinagar", x=24, y=40, aliases=["शिवाजीनगर", "शिवाजी नगर"]),
+        Location(id="viman", name="Viman Nagar", x=80, y=78, aliases=["विमाननगर", "विमान नगर"]),
+        Location(id="kharadi", name="Kharadi", x=95, y=68, aliases=["खराडी"]),
+        Location(id="camp", name="Camp", x=62, y=48, aliases=["कॅम्प", "कैम्प"]),
     ]
     vehicles = [
-        Vehicle(id="V1", capacity=60, start_location="depot", driver="Arjun"),
-        Vehicle(id="V2", capacity=60, start_location="depot", driver="Ravi"),
-        Vehicle(id="V3", capacity=50, start_location="depot", driver="Sana"),
-        Vehicle(id="V4", capacity=50, start_location="depot", driver="Meera"),
-        Vehicle(id="V5", capacity=40, start_location="depot", driver="Imran"),
+        Vehicle(id="V1", capacity=60, start_location="depot", driver="Arjun", language="mr"),
+        Vehicle(id="V2", capacity=60, start_location="depot", driver="Ravi", language="mr"),
+        Vehicle(id="V3", capacity=50, start_location="depot", driver="Sana", language="hi"),
+        Vehicle(id="V4", capacity=50, start_location="depot", driver="Meera", language="hi"),
+        Vehicle(id="V5", capacity=40, start_location="depot", driver="Imran", language="en"),
     ]
 
     def d(i: str, loc: str, size: int, ws: str, we: str, svc: float = 5, prio: bool = False) -> Delivery:

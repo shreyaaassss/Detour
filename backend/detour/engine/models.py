@@ -16,6 +16,7 @@ class Location(_Frozen):
     name: str
     x: float
     y: float
+    aliases: list[str] = []  # other spellings a driver might say or write, for example in Marathi or Hindi
 
 
 class Vehicle(_Frozen):
@@ -28,6 +29,7 @@ class Vehicle(_Frozen):
     status: Literal["active", "failed"] = "active"
     failed_at: float | None = None
     failure_location: str | None = None
+    language: str = "en"  # the driver's language for messages: en, hi or mr
 
 
 class Pickup(_Frozen):

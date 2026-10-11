@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import os
+import time
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Literal
 
@@ -14,6 +19,9 @@ from detour.audit import AuditEntry, AuditLog
 from detour.engine.disruptions import Disruption
 from detour.engine.models import Plan, Scenario
 from detour.events import EventBus
+from detour.rescue.clock import SimClock
+from detour.rescue.routes import build_router
+from detour.rescue.service import RescueConfig, RescueService
 from detour.session import ApiError, Preview, Session, diff_json
 
 
@@ -48,14 +56,40 @@ def _preview_json(p: Preview) -> dict[str, Any]:
     }
 
 
-def create_app(audit_path: Path | None = None, start_demo: bool = True) -> FastAPI:
-    app = FastAPI(title="DeTour", version="0.4.0")
+def create_app(
+    audit_path: Path | None = None,
+    start_demo: bool = True,
+    start_ticker: bool = True,
+    rescue_config: RescueConfig | None = None,
+    clock: SimClock | None = None,
+    wall=None,
+) -> FastAPI:
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        task = None
+        if start_ticker:  # the offer, call and approval timers run on this tick
+
+            async def loop() -> None:
+                while True:
+                    rescue.tick()
+                    await asyncio.sleep(0.25)
+
+            task = asyncio.create_task(loop())
+        yield
+        if task:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+
+    app = FastAPI(title="DeTour", version="0.6.0", lifespan=lifespan)
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
     bus = EventBus()
     audit = AuditLog(audit_path, on_append=lambda e: bus.publish({"type": "audit", "entry": e.model_dump()}))
-    session = Session(audit, bus)
-    app.state.session, app.state.bus, app.state.audit = session, bus, audit
+    session = Session(audit, bus, clock or SimClock(wall=wall or time.time))
+    rescue = RescueService(session, rescue_config, **({"wall": wall} if wall else {}))
+    app.state.session, app.state.bus, app.state.audit, app.state.rescue = session, bus, audit, rescue
+    app.include_router(build_router(session, rescue))
 
     if audit.archived:
         audit.append(

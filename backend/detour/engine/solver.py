@@ -55,6 +55,7 @@ class Problem:
     pinned: dict[str, str] = field(default_factory=dict)  # parcel -> vehicle it is aboard
     ref: Ref | None = None
     needs_pickup: set[str] = field(default_factory=set)  # parcels whose pickup has not happened yet
+    assigned: dict[str, str] = field(default_factory=dict)  # parcel -> the vehicle a person chose for it (a rescue)
 
 
 def fresh_problem(scenario: Scenario, travel: TravelModel | None = None) -> Problem:
@@ -128,7 +129,7 @@ class Search:
 
     # --- moves --------------------------------------------------------------------------
     def allowed(self, pid: str) -> list[VState]:
-        pin = self.p.pinned.get(pid)
+        pin = self.p.pinned.get(pid) or self.p.assigned.get(pid)
         return [s for s in self.live if pin is None or s.vehicle.id == pin]
 
     def variants(self, ids: list[str], pid: str) -> list[list[str]]:
@@ -276,8 +277,19 @@ def explain_unplaced(se: Search, d: Delivery) -> str:
 
     cands = se.allowed(d.id)
     pin = se.p.pinned.get(d.id)
+    who = se.p.assigned.get(d.id)
+    chosen = None
+    if who:
+        v = se.p.scenario.vehicle(who)
+        chosen = f"{v.driver} ({who})" if v.driver else who
+    if not cands:
+        return f"{chosen or pin} is not available"
     earliest = min(first_arrival(s) for s in cands)
     if earliest > d.window_end:
+        if chosen:
+            return (
+                f"{chosen} could only deliver it at {hhmm(earliest)}, after its window closes at {hhmm(d.window_end)}"
+            )
         if pin:
             return (
                 f"it is aboard {pin}, which cannot reach it before {hhmm(earliest)}, "
@@ -287,6 +299,8 @@ def explain_unplaced(se: Search, d: Delivery) -> str:
     free = {s.vehicle.id: s.vehicle.capacity - se.eval(s.vehicle.id, se.seq[s.vehicle.id]).peak_load for s in cands}
     if all(f < d.size for f in free.values()):
         return f"every vehicle is too full: size {d.size}, most free capacity is {max(free.values())}"
+    if chosen:
+        return f"{chosen} cannot take it without making its own deliveries miss their windows"
     if pin:
         return f"it is aboard {pin} and cannot be delivered without another delivery missing its window"
     return "no vehicle can take it without another delivery missing its window or a vehicle running past its shift end"
@@ -298,9 +312,14 @@ def solve_problem(
     todo: list[Delivery] | None = None,
     as_of: float | None = None,
     optimise: bool = True,
+    forbidden: dict[str, str] | None = None,
 ) -> Plan:
+    """`forbidden` maps parcels that must not be placed to the reason they are not delivered."""
+    forbidden = forbidden or {}
+    if forbidden and seq:
+        seq = {v: [i for i in ids if split_item_id(i)[1] not in forbidden] for v, ids in seq.items()}
     se = Search(prob, seq)
-    pending: list[Delivery] = list(todo if todo is not None else prob.jobs.values())
+    pending: list[Delivery] = [d for d in (todo if todo is not None else prob.jobs.values()) if d.id not in forbidden]
     for st in se.live:
         pending += [prob.jobs[p] for p in se.repair(st.vehicle.id)]
     leftover: list[Delivery] = []
@@ -326,6 +345,7 @@ def solve_problem(
     unplaced = [
         Unplaced(delivery_id=d.id, reason=explain_unplaced(se, d), vehicle_id=prob.pinned.get(d.id)) for d in leftover
     ]
+    unplaced += [Unplaced(delivery_id=pid, reason=why) for pid, why in forbidden.items() if pid in prob.jobs]
     return Plan(
         scenario=prob.scenario.name,
         routes=routes,

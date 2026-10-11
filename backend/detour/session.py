@@ -7,6 +7,7 @@ publishes a state event so connected screens refresh.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -20,11 +21,12 @@ from detour.engine.disruptions import (
     VehicleFailure,
     effective_time,
 )
-from detour.engine.models import Plan, Scenario
+from detour.engine.models import Plan, Scenario, parse_hhmm
 from detour.engine.replan import PlanInvalid, ReplanResult, replan
 from detour.engine.scenario import DEMO_BASELINE, demo_presets, demo_scenario
 from detour.engine.solver import plan_from_sequences, solve
 from detour.events import EventBus
+from detour.rescue.clock import SimClock
 from detour.validator import Report, validate
 
 AnyDisruption = RoadClosure | VehicleFailure | UrgentDelivery
@@ -59,9 +61,11 @@ def validate_plan(scenario: Scenario, plan: Plan) -> Report:
 
 
 class Session:
-    def __init__(self, audit: AuditLog, bus: EventBus):
+    def __init__(self, audit: AuditLog, bus: EventBus, clock: SimClock | None = None):
         self.audit = audit
         self.bus = bus
+        self.clock = clock or SimClock()
+        self.listeners: list[Callable[[str], None]] = []
         self.version = 0
         self.kind = "demo"
         self.base_scenario: Scenario = demo_scenario()
@@ -72,6 +76,7 @@ class Session:
         self.applied: list[dict[str, Any]] = []
         self.causes: list[str] = []
         self.previews: dict[str, Preview] = {}
+        self.approved_messages: dict[str, str] = {}  # delivery id -> the exact text the dispatcher approved
 
     # --- helpers ----------------------------------------------------------------------------
     @property
@@ -81,10 +86,19 @@ class Session:
     def log(self, actor: str, action: str, details: dict[str, Any] | None = None) -> None:
         self.audit.append(actor, action, details, self.sim_time)
 
+    def on_change(self, fn: Callable[[str], None]) -> None:
+        self.listeners.append(fn)
+
     def _changed(self, reason: str) -> None:
         self.version += 1
         self.previews.clear()  # any pending preview was built on the old plan
         self.bus.publish({"type": "state", "version": self.version, "reason": reason})
+        for fn in self.listeners:
+            fn(reason)
+
+    def incident_time(self) -> float:
+        """The simulated time a new incident happens at: now, but never before the plan's own time."""
+        return max(self.clock.now(), self.plan.as_of or 0.0)
 
     # --- scenario and baseline plan ---------------------------------------------------------
     def load_scenario(self, scenario: Scenario, kind: str, actor: str) -> None:
@@ -92,6 +106,9 @@ class Session:
         self.kind = kind
         self.original = self.plan = self.report = None
         self.applied, self.causes = [], []
+        self.approved_messages = {}
+        # the demo's breakdown story happens at 14:05; any other scenario starts at its day start
+        self.clock.set(parse_hhmm("14:05") if kind == "demo" else scenario.day_start, speed=0)
         self.log(
             actor,
             "scenario_loaded",
@@ -146,11 +163,18 @@ class Session:
         self.build_plan("demo", actor)
 
     # --- disruptions ------------------------------------------------------------------------
-    def _compute(self, d: AnyDisruption, actor: str) -> Preview:
+    def compute(
+        self,
+        d: AnyDisruption,
+        actor: str,
+        assign: dict[str, str] | None = None,
+        forbidden: dict[str, str] | None = None,
+        now: float | None = None,
+    ) -> Preview:
         if self.plan is None or self.original is None:
             raise ApiError(409, "no_plan", "build a plan before applying a disruption")
         try:
-            result = replan(self.scenario, self.plan, d)
+            result = replan(self.scenario, self.plan, d, now=now, assign=assign, forbidden=forbidden)
         except DisruptionError as e:
             self.log(actor, "disruption_refused", {"reason": str(e), "disruption": d.model_dump()})
             raise ApiError(422, "invalid_disruption", str(e)) from e
@@ -170,7 +194,7 @@ class Session:
         return Preview(uuid.uuid4().hex[:10], d, result, diff, self.version, actor)
 
     def preview(self, d: AnyDisruption, actor: str) -> Preview:
-        p = self._compute(d, actor)
+        p = self.compute(d, actor)
         self.previews[p.id] = p
         self.log(
             actor,
@@ -184,7 +208,7 @@ class Session:
         )
         return p
 
-    def _commit(self, p: Preview, actor: str, confirmed_by: str | None) -> None:
+    def commit(self, p: Preview, actor: str, confirmed_by: str | None, meta: dict[str, Any] | None = None) -> None:
         r = p.result
         d = p.disruption
         self.scenario, self.plan, self.report = r.scenario, r.plan, r.report
@@ -225,7 +249,7 @@ class Session:
         if p.base_version != self.version:
             self.log(actor, "disruption_refused", {"reason": "plan changed since preview", "preview": preview_id})
             raise ApiError(409, "stale_preview", "the plan changed since this preview; preview it again")
-        self._commit(p, actor, confirmed_by)
+        self.commit(p, actor, confirmed_by)
         return p
 
     def apply(self, d: AnyDisruption, actor: str, confirmed_by: str | None) -> Preview:
@@ -243,8 +267,8 @@ class Session:
                 "confirmation_required",
                 "a disruption interpreted from text or voice must be confirmed by the dispatcher",
             )
-        p = self._compute(d, actor)
-        self._commit(p, actor, confirmed_by or actor)
+        p = self.compute(d, actor)
+        self.commit(p, actor, confirmed_by or actor)
         return p
 
     # --- validation and views ---------------------------------------------------------------
@@ -270,6 +294,20 @@ class Session:
         return build_diff(
             self.original, self.plan, self.scenario, self.causes, self.plan.as_of or self.scenario.day_start
         )
+
+    def drafts(self) -> list[dict[str, Any]]:
+        from detour.messages import drafts
+
+        return drafts(self)
+
+    def approve_message(self, delivery_id: str, actor: str) -> dict[str, Any]:
+        found = next((m for m in self.drafts() if m["delivery_id"] == delivery_id), None)
+        if found is None:
+            raise ApiError(404, "no_draft", f"there is no customer message for {delivery_id}")
+        self.approved_messages[delivery_id] = found["text"]
+        self.log(actor, "customer_message_approved", {"delivery": delivery_id, "text": found["text"]})
+        self.bus.publish({"type": "state", "version": self.version, "reason": "message_approved"})
+        return {**found, "approved": True}
 
     def presets(self) -> dict[str, Any]:
         if self.kind != "demo":

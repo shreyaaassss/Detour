@@ -48,14 +48,19 @@ class ReplanResult:
     cause: str
 
 
-def freeze_prefixes(plan: Plan, now: float, failing: set[str]) -> dict[str, list[Stop]]:
-    """Per vehicle: the stops that can no longer change at time `now`."""
+def freeze_prefixes(
+    plan: Plan, now: float, failing: set[str], fail_times: dict[str, float] | None = None
+) -> dict[str, list[Stop]]:
+    """Per vehicle: the stops that can no longer change at time `now`. A failing vehicle stops at the
+    time it failed, which may be earlier than `now`."""
+    fail_times = fail_times or {}
     out: dict[str, list[Stop]] = {}
     for r in plan.routes:
         prefix: list[Stop] = []
         prev_dep = r.start_time
+        limit = fail_times.get(r.vehicle_id, now)
         for s in r.stops:
-            if s.arrival <= now or (s.frozen and r.vehicle_id not in failing):  # done, in progress, or committed
+            if s.arrival <= limit or (s.frozen and r.vehicle_id not in failing):  # done, in progress, or committed
                 prefix.append(s.model_copy(update={"frozen": True}))
             elif r.vehicle_id not in failing and prev_dep + s.idle <= now:  # mid-leg: committed
                 prefix.append(s.model_copy(update={"frozen": True}))
@@ -77,7 +82,11 @@ def replan(
     disruption: RoadClosure | VehicleFailure | UrgentDelivery,
     *,
     now: float | None = None,
+    assign: dict[str, str] | None = None,
+    forbidden: dict[str, str] | None = None,
 ) -> ReplanResult:
+    """`assign` fixes parcel -> vehicle (a rescuer who agreed to take it). `forbidden` maps parcels that
+    must not be planned to the reason they are not delivered (nobody accepted the rescue)."""
     validate_disruption(scenario, disruption)
     now = effective_time(disruption) if now is None else now
     if plan.as_of is not None and now < plan.as_of - 1e-9:
@@ -85,7 +94,8 @@ def replan(
     cause = describe(scenario, disruption)
 
     failing = {disruption.vehicle_id} if isinstance(disruption, VehicleFailure) else set()
-    frozen = freeze_prefixes(plan, now, failing)
+    fail_times = {disruption.vehicle_id: disruption.time} if isinstance(disruption, VehicleFailure) else {}
+    frozen = freeze_prefixes(plan, now, failing, fail_times)
     pending_pickups = {
         s.delivery_id for r in plan.routes for s in r.stops[len(frozen[r.vehicle_id]) :] if s.kind == "pickup"
     }
@@ -121,7 +131,11 @@ def replan(
         aboard += [p for p, vid in aboard_unplaced.items() if vid == disruption.vehicle_id]
         for pid in aboard:  # parcels aboard the broken vehicle are now at the breakdown site
             deliveries[pid] = deliveries[pid].model_copy(
-                update={"pickup": Pickup(location=disruption.location, ready_time=now, service_time=HANDOVER_MINUTES)}
+                update={
+                    "pickup": Pickup(
+                        location=disruption.location, ready_time=disruption.time, service_time=HANDOVER_MINUTES
+                    )
+                }
             )
             new_pickups.add(pid)
     else:
@@ -134,7 +148,9 @@ def replan(
             service_time=disruption.service_time,
             priority=True,
             pickup=Pickup(
-                location=disruption.pickup_location or scenario.depot, ready_time=now, service_time=HANDOVER_MINUTES
+                location=disruption.pickup_location or scenario.depot,
+                ready_time=disruption.time,
+                service_time=HANDOVER_MINUTES,
             ),
         )
         new_pickups.add(disruption.id)
@@ -205,6 +221,13 @@ def replan(
         )
         if not collected:
             needs_pickup.add(pid)
+    assign = assign or {}
+    for pid, vid in assign.items():
+        veh = next((v for v in revised.vehicles if v.id == vid), None)
+        if veh is None or veh.status != "active":
+            raise DisruptionError(f"{vid} cannot take {pid}: it is not available")
+        if pid not in jobs:
+            raise DisruptionError(f"{pid} is not waiting to be delivered")
     prob = Problem(
         revised,
         travel,
@@ -213,8 +236,9 @@ def replan(
         pinned=pinned,
         ref=Ref.from_plan(plan),
         needs_pickup=needs_pickup,
+        assigned=assign,
     )
-    new_plan = solve_problem(prob, seq=seq, todo=todo, as_of=now)
+    new_plan = solve_problem(prob, seq=seq, todo=todo, as_of=now, forbidden=forbidden)
 
     failures = [{"vehicle_id": v.id, "time": v.failed_at} for v in revised.vehicles if v.failed_at is not None]
     report = validate(
