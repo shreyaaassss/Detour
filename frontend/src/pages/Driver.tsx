@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api, ApiError } from '../api'
 import { audioUrl, setSound, useSound } from '../audio'
+import { BrowserCall } from '../components/BrowserCall'
 import { Countdown } from '../components/Countdown'
 import { Listen } from '../components/Listen'
 import { Mic } from '../components/Mic'
@@ -75,6 +76,7 @@ export default function Driver() {
             <h2 className="h">{ui('calling', lang)}</h2>
             <Countdown deadline={ringing.call_state === 'in_call' ? ringing.conversation_deadline : ringing.deadline}
               total={ringing.call_state === 'in_call' ? cfg.conversation_limit : cfg.ring_timeout} label={ui('secondsLeft', lang)} />
+            <BrowserCall offer={ringing} lang={lang} />
           </section>
         )}
         {!push && !ringing && (

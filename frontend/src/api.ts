@@ -1,7 +1,7 @@
 import { setServerTime } from './serverTime'
 import type {
   AppState, AuditView, CustomerMessage, Disruption, Incident, Interpreter, Note, Offer, ParseInfo, Plan, PreviewResult, Presets,
-  Proposal, Report, RescueOverview, TelephonyStatus, VoiceStatus,
+  BrowserSession, Proposal, Report, RescueOverview, TelephonyStatus, VoiceStatus,
 } from './types'
 
 const ACTOR_KEY = 'detour.actor'
@@ -59,6 +59,10 @@ export const api = {
 
   // phone line
   telephonyStatus: () => call<TelephonyStatus>('GET', '/telephony/status'),
+  browserSession: (offerId: string, driver: string) =>
+    call<BrowserSession>('POST', `/offers/${offerId}/browser-session`, { driver }),
+  browserStarted: (offerId: string, driver: string, conversationId: string) =>
+    call<{ ok: boolean }>('POST', `/offers/${offerId}/browser-session/started`, { driver, conversation_id: conversationId }),
   testCall: (driver?: string) => call<{ started: boolean; language: string }>('POST', '/telephony/test', { driver }),
 
   // voice

@@ -254,6 +254,11 @@ class FakeLine:
         self.placed.append({"to": to_number, "agent": agent_id, **kw})
         return "conv_1", "CA1"
 
+    def signed_url(self, agent_id):
+        if self.fail_place:
+            raise VoiceError("Could not reach ElevenLabs.")
+        return f"wss://example.invalid/{agent_id}?sig=1"
+
     def conversation(self, cid):
         self.polls += 1
         return self.states[min(self.polls - 1, len(self.states) - 1)]
@@ -515,6 +520,92 @@ def test_without_a_phone_line_nothing_is_ever_dialled(tmp_path):
     rig.to_call()
     assert rig.state() == "CALL_ESCALATED" and not line.placed
     assert "real_call_skipped" in rig.actions()
+
+
+# --- Plan B: the conversation is held in the driver's browser, with no phone line ---
+def browser_rig(states, **kw):
+    """Calls switched off and no number: only the key and the agent, which is all a browser call needs."""
+    return Rig(FakeLine(states, **kw), CallSettings(api_key="key-abc-123", agent_id="agent_1"))
+
+
+def test_a_browser_call_needs_no_phone_line_or_number():
+    rig = browser_rig([])
+    st = rig.c.get("/telephony/status").json()
+    assert st["browser_ready"] and not st["ready"]
+    assert not Rig(FakeLine([]), CallSettings()).tel.browser_missing() == []
+
+
+def test_the_browser_gets_the_engines_script_and_a_signed_address_never_the_key():
+    rig = browser_rig([])
+    rig.to_call()
+    off = rig.inc()["active_offer"]
+    r = rig.c.post(f"/offers/{off['id']}/browser-session", json={"driver": "Meera"})
+    assert r.status_code == 200
+    j = r.json()
+    assert j["signed_url"].startswith("wss://") and "key-abc-123" not in r.text
+    assert j["language"] == "hi" and "ऑटोमेटेड" in j["first_message"] and "1 दबाएँ या कन्फर्म बोलें" in j["first_message"]
+    assert j["variables"]["offer_id"] == off["id"] and j["variables"]["parcel"] == "D7"
+
+
+def test_only_the_driver_being_called_may_open_the_browser_call():
+    rig = browser_rig([])
+    rig.to_call()
+    off = rig.inc()["active_offer"]
+    assert rig.c.post(f"/offers/{off['id']}/browser-session", json={"driver": "Sana"}).status_code == 403
+    assert rig.c.post("/offers/O-999/browser-session", json={}).status_code == 404
+
+
+def test_a_browser_call_is_refused_when_nothing_is_ringing():
+    rig = browser_rig([])
+    rig.to_call()
+    off = rig.inc()["active_offer"]
+    rig.c.post("/telephony/webhook", json={"offer_id": off["id"], "outcome": "declined"})
+    r = rig.c.post(f"/offers/{off['id']}/browser-session", json={"driver": "Meera"})
+    assert r.status_code == 409 and r.json()["code"] == "offer_closed"
+
+
+def test_a_browser_call_that_cannot_be_set_up_says_so():
+    rig = Rig(FakeLine([]), CallSettings(api_key="k"))  # no agent yet
+    rig.to_call()
+    off = rig.inc()["active_offer"]
+    r = rig.c.post(f"/offers/{off['id']}/browser-session", json={"driver": "Meera"})
+    assert r.status_code == 409 and r.json()["code"] == "browser_call_unavailable"
+    assert rig.state() == "CALL_ESCALATED"  # the simulate buttons and the timers still apply
+
+
+def test_accepting_in_the_browser_call_commits_the_rescue():
+    rig = browser_rig([convo("in-progress", user("1"), tool("confirmed", "keypad"))])
+    rig.to_call()
+    off = rig.inc()["active_offer"]
+    assert (
+        rig.c.post(
+            f"/offers/{off['id']}/browser-session/started", json={"driver": "Meera", "conversation_id": "conv_9"}
+        ).status_code
+        == 200
+    )
+    assert rig.inc()["active_offer"]["call_state"] == "in_call"
+    rig.drain()
+    inc = rig.inc()
+    assert inc["state"] == "COMMITTED" and inc["claim"]["via"] == "call" and inc["claim"]["how"] == "keypad"
+    assert "browser_call_started" in rig.actions()
+    assert rig.c.get("/state").json()["report"]["valid"]
+
+
+def test_declining_in_the_browser_call_moves_to_the_next_driver():
+    rig = browser_rig([convo("in-progress", user("नहीं"), tool("declined", "voice"))])
+    rig.to_call()
+    off = rig.inc()["active_offer"]
+    rig.c.post(f"/offers/{off['id']}/browser-session/started", json={"driver": "Meera", "conversation_id": "conv_9"})
+    rig.drain()
+    assert rig.inc()["active_offer"]["driver"] == "Sana"
+
+
+def test_a_browser_call_cannot_be_opened_endlessly():
+    rig = Rig(FakeLine([]), CallSettings(api_key="k", agent_id="a", max_calls=1))
+    rig.to_call()
+    off = rig.inc()["active_offer"]
+    assert rig.c.post(f"/offers/{off['id']}/browser-session", json={"driver": "Meera"}).status_code == 200
+    assert rig.c.post(f"/offers/{off['id']}/browser-session", json={"driver": "Meera"}).status_code == 409
 
 
 # --- the agent's own webhook ---

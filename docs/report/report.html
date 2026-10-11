@@ -93,7 +93,7 @@ svg text { font-family: 'Archivo', sans-serif; }
     <tr><td>Domain</td><td>4, Supply Chain &amp; Optimization</td></tr>
     <tr><td>Prototype</td><td>github.com/shreyaaassss/Detour</td></tr>
   </table>
-  <p class="summary">DeTour assigns deliveries to vehicles within capacity and time windows, then replans from the state of the day when a road slows, a vehicle fails or an urgent delivery arrives. Every change is checked by a separate validator and explained delivery by delivery. For a breakdown, a stranded driver reports by voice in their own language, the head of logistics approves a ranked shortlist, a nearby driver is offered the job in the app, and if they do not answer within 60 seconds an automated phone agent calls them.</p>
+  <p class="summary">DeTour assigns deliveries to vehicles within capacity and time windows, then replans from the state of the day when a road slows, a vehicle fails or an urgent delivery arrives. Every change is checked by a separate validator and explained delivery by delivery. For a breakdown, a stranded driver reports by voice in their own language, the head of logistics approves a ranked shortlist, a nearby driver is offered the job in the app, and if they do not answer within 60 seconds an automated voice agent speaks to them live on their phone.</p>
   </div>
 </section>
 
@@ -227,7 +227,7 @@ svg text { font-family: 'Archivo', sans-serif; }
   <tr><td>Dispatcher</td><td>Dispatcher console (laptop)</td><td>Loads the day, applies or describes disruptions, reviews the effect before applying it, compares original and revised plans, approves customer messages, and reads the audit log. Needs speed and trust: a change they can explain.</td></tr>
   <tr><td>Stranded driver</td><td>Driver app (phone)</td><td>Reports a breakdown by voice or text in their own language, confirms a read-back, and is told what is happening. Needs something they can use roadside, in a language they speak, with no promise made that is not yet true.</td></tr>
   <tr><td>Head of logistics, and a backup approver</td><td>Head console (phone or laptop)</td><td>Receives the alert, sees a ranked list of rescue drivers with times and the impact on other deliveries, and approves up to three. Needs to decide in seconds, with a backup if they cannot.</td></tr>
-  <tr><td>Rescue driver</td><td>Driver app and a phone call</td><td>Receives a spoken offer with a countdown, and is called if they do not answer. Needs a short, unambiguous request and an easy way to accept or decline.</td></tr>
+  <tr><td>Rescue driver</td><td>Driver app, then a live voice call in the app</td><td>Receives a spoken offer with a countdown, and is spoken to by the voice agent if they do not answer. Needs a short, unambiguous request and an easy way to accept or decline.</td></tr>
   <tr><td>Customers</td><td>Messages drafted by the system</td><td>Do not use the system directly. They receive an honest, specific message approved by the dispatcher.</td></tr>
 </table>
 
@@ -239,7 +239,7 @@ svg text { font-family: 'Archivo', sans-serif; }
   <tr><td>Read a typed report into a disruption</td><td>OpenAI language model (optional)</td><td>Fills in a fixed form and nothing else. Every place must be on the known list <i>and</i> actually named in the text. Times and numbers it invents are flagged. A strict rule reader cross-checks it; if they disagree, the rule reader wins and the other reading is shown. The dispatcher confirms.</td><td>The rule reader alone</td></tr>
   <tr><td>Understand a spoken report</td><td>ElevenLabs speech-to-text (Hindi, Marathi, English)</td><td>The transcript passes the same checks as typed text. An unknown place is rejected. The driver confirms a read-back before anything proceeds. Audio is not stored.</td><td>The browser's speech recognition, then typing or buttons</td></tr>
   <tr><td>Speak read-backs, offers and updates</td><td>ElevenLabs text-to-speech</td><td>Speaks only sentences the engine produced, found by reference. It never accepts free text, so it cannot say what the plan does not back. Every sentence is cached, and a per-run character cap limits spend.</td><td>The phone's own voice, then text on screen</td></tr>
-  <tr><td>Escalation call</td><td>ElevenLabs conversational agent over a phone line</td><td>Opens with the engine's exact script. It is instructed never to add, change or promise a fact. It takes one answer, by voice or keypad, repeats once, and reports through a tool. Calls are opt-in, go only to listed numbers, and are capped.</td><td>The dispatcher's "simulate the call" buttons, or a typed answer</td></tr>
+  <tr><td>Escalation call</td><td>ElevenLabs conversational agent, in the driver's browser</td><td>Opens with the engine's exact script. It is instructed never to add, change or promise a fact. It takes one answer, spoken or by on-screen 1 and 2 buttons (browsers cannot send keypad tones), repeats once, and reports through a tool. Calls are capped per run, and only the driver being asked can open one.</td><td>The dispatcher's "simulate the call" buttons, or a typed answer</td></tr>
   <tr><td>Customer wording</td><td>No model: templates</td><td>Filled in from the engine's facts. A generated sentence could be wrong about a time, so none is used.</td><td>Not needed</td></tr>
 </table>
 <div class="note"><b>Where AI never acts.</b> It does not assign deliveries, decide feasibility, compute a time or an ETA, approve a rescue, or change the plan. Those belong to the engine, the validator and people. This is what the booklet means by AI that informs a decision but does not silently override it.</div>
@@ -322,10 +322,10 @@ svg text { font-family: 'Archivo', sans-serif; }
     <rect x="239" y="626" width="222" height="104" rx="6" fill="#fff" stroke="#14203a" stroke-dasharray="6 3"/><text x="249" y="645" font-weight="700" font-size="12">Speech (optional)</text>
     <text x="249" y="662" fill="#44506b">ElevenLabs speech-to-text for reports;</text><text x="249" y="676" fill="#44506b">text-to-speech for read-backs, offers</text><text x="249" y="690" fill="#44506b">and updates.</text><text x="249" y="716" fill="#6b7790" font-style="italic">Fallback: browser speech, typing</text>
     <rect x="478" y="626" width="222" height="104" rx="6" fill="#fff" stroke="#14203a" stroke-dasharray="6 3"/><text x="488" y="645" font-weight="700" font-size="12">Phone agent (optional)</text>
-    <text x="488" y="662" fill="#44506b">ElevenLabs conversational agent over a</text><text x="488" y="676" fill="#44506b">phone line rings the driver in Hindi.</text><text x="488" y="690" fill="#44506b">Voice or keypad answer.</text><text x="488" y="716" fill="#6b7790" font-style="italic">Fallback: simulate-the-call buttons</text>
+    <text x="488" y="662" fill="#44506b">ElevenLabs conversational agent talks</text><text x="488" y="676" fill="#44506b">to the driver in Hindi, in the browser.</text><text x="488" y="690" fill="#44506b">Spoken answer or on-screen 1 / 2.</text><text x="488" y="716" fill="#6b7790" font-style="italic">Fallback: simulate-the-call buttons</text>
   </g>
 </svg>
-<figcaption>Figure 2. System architecture. The planning engine and the independent validator are the core and run with no external service. The language, speech and phone services (dashed) are optional layers, and each has a local fallback. The planner's output always passes through the validator before it is shown or committed. The phone agent reports the driver's answer to the server with a shared secret, and the server also checks the call itself.</figcaption>
+<figcaption>Figure 2. System architecture. The planning engine and the independent validator are the core and run with no external service. The language, speech and phone services (dashed) are optional layers, and each has a local fallback. The planner's output always passes through the validator before it is shown or committed. The server follows the voice conversation and records the driver's answer from it.</figcaption>
 </figure>
 
 <h3>Components and technology</h3>
@@ -335,7 +335,7 @@ svg text { font-family: 'Archivo', sans-serif; }
   <tr><td>Independent validator</td><td>A separate Python package working on plain data. An automated test fails the build if it ever imports the planner.</td></tr>
   <tr><td>Server</td><td>FastAPI. REST endpoints plus a server-sent event stream, so every screen updates live. State is held in one process, with the audit log written to disk.</td></tr>
   <tr><td>Screens</td><td>React and TypeScript. Dispatcher console, driver app and head console, responsive from laptop to phone. The driver app works in three languages.</td></tr>
-  <tr><td>AI and phone</td><td>OpenAI for typed reports (optional). ElevenLabs for speech-to-text, text-to-speech and the phone agent, with a telephony provider carrying the call.</td></tr>
+  <tr><td>AI and phone</td><td>OpenAI for typed reports (optional). ElevenLabs for speech-to-text, text-to-speech and the voice agent.</td></tr>
   <tr><td>Data</td><td>Fictional only: a built-in demo scenario, or a scenario loaded from JSON or CSV. Travel times come from a simulated matrix. No live map, GPS or traffic data.</td></tr>
   <tr><td>Run</td><td>One command each for the server and the screens. The core demonstration needs no paid service. Phones reach it through an HTTPS tunnel, which browsers require for the microphone.</td></tr>
 </table>
@@ -373,14 +373,14 @@ svg text { font-family: 'Archivo', sans-serif; }
   <li>Travel times are simulated. There is no live map or traffic.</li>
   <li>A parcel on a running vehicle cannot move to another vehicle; a roadside handover between running vehicles is not modelled.</li>
   <li>State is held in one process. There is no sign-in, so the demonstration relies on an unguessable tunnel address.</li>
-  <li><b>A real phone call has not yet been placed</b>, because a phone line is still being connected. The call logic is tested against a faked line, and the agent against the vendor's simulator.</li>
+  <li><b>The escalation call is a live voice conversation in the driver's browser, not a call over a phone line</b>, because a phone number needs a paid service. The call logic is tested against a faked line, and the agent against the vendor's simulator.</li>
   <li>The voice path was tested in a desktop browser, not yet on physical phones.</li>
 </ul>
 </div>
 </div>
 <h3>Next steps</h3>
 <ul>
-  <li>Connect a phone line and run the live three-phone rehearsal, including the real call, with a fallback for every step.</li>
+  <li>Run the live three-phone rehearsal, including the voice call, with a fallback for every step.</li>
   <li>Check every acceptance criterion of the specification end to end, and document assumptions and limits in the repository README.</li>
   <li>After the event: sign-in and roles, a database for state, and a road-network travel-time source in place of the simulated matrix.</li>
 </ul>

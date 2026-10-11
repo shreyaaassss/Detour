@@ -76,7 +76,7 @@ DeTour has two halves. The first is a planning engine that can replan from the c
 | Read a typed report | OpenAI language model, checked by a strict rule reader | Rule reader alone |
 | Understand a spoken report | ElevenLabs speech-to-text (Hindi, Marathi, English) | Browser speech, typing |
 | Speak read-backs and offers | ElevenLabs text-to-speech | Phone's own voice |
-| Escalation call | ElevenLabs phone agent, voice or keypad answer | Simulate-the-call buttons |
+| Escalation call | ElevenLabs voice agent in the driver's browser, spoken answer or on-screen 1 and 2 | Simulate-the-call buttons |
 
 **Guardrails:** every place must be on the known list and named in the text. Unknown places are rejected, never guessed. Nothing applies until the dispatcher confirms.
 
@@ -115,13 +115,13 @@ The core is plain, checkable code. A heuristic builds the plan and a separate va
 - Real-world path: the engine reads travel times from a matrix, so a road-network source can supply it in place of the simulated one.
 - Runs on a single server. Phones need only a browser.
 
-**Honest limits:** the solver is a heuristic (not provably optimal); travel times are simulated; state lives in one process; a real phone call is being connected and has not been placed yet.
+**Honest limits:** the solver is a heuristic (not provably optimal); travel times are simulated; state lives in one process; the escalation call runs as a live voice conversation in the driver's browser, not over a phone line.
 
 **Visual:** the table above, plus a small badge row: "260+ tests", "18,000 random disruption sequences valid", "no paid service needed for the core".
 
 **Say**
 
-We did not stop at a design. It is built and tested. The speed figures are from synthetic fleets on one laptop: a 30-vehicle day plans in about eight seconds and replans in half a second, and a replan on the demo fleet is instant. Cost is small because speech is cached and capped, and because the core needs no paid service at all. We are open about the limits: it is a heuristic, the travel times are simulated, and the real phone line is the last piece being connected.
+We did not stop at a design. It is built and tested. The speed figures are from synthetic fleets on one laptop: a 30-vehicle day plans in about eight seconds and replans in half a second, and a replan on the demo fleet is instant. Cost is small because speech is cached and capped, and because the core needs no paid service at all. We are open about the limits: it is a heuristic, the travel times are simulated, and the escalation call is a voice conversation in the driver's browser rather than a real phone line.
 
 ---
 
@@ -204,7 +204,7 @@ Most tools either re-plan from scratch, or show you where vehicles are, or let a
 ## Do not claim
 
 - Percentage savings, hours saved, or cost reductions. Nothing was measured on a real fleet.
-- That a real phone call has worked. It has not been placed yet (update this once it has).
+- That a real phone call over a phone line has worked. The call is a browser voice conversation; no number was dialled.
 - That it has been tried on physical phones, or at large scale. The speed table is synthetic.
 - That the solver is optimal. It is a heuristic and says so.
 

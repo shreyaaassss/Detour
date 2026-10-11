@@ -11,12 +11,22 @@ from detour.rescue.service import RescueService
 from detour.rescue.strings import say
 from detour.session import ApiError, Session
 from detour.telephony.service import TelephonyService
+from detour.voice.client import VoiceError
 
 
 class AgentReport(BaseModel):
     offer_id: str = ""
     decision: Literal["confirmed", "declined", "unclear"]
     method: Literal["voice", "keypad"] | None = None
+
+
+class BrowserStarted(BaseModel):
+    driver: str | None = None
+    conversation_id: str
+
+
+class BrowserOpen(BaseModel):
+    driver: str | None = None
 
 
 class TestBody(BaseModel):
@@ -51,6 +61,23 @@ def build_router(s: Session, svc: RescueService, tel: TelephonyService) -> APIRo
             svc.telephony_event(body.offer_id, body.decision, body.method)
         except ApiError as e:  # too late or unknown: say so quietly so the agent does not get confused mid-call
             return {"ok": False, "reason": e.code}
+        return {"ok": True}
+
+    @r.post("/offers/{offer_id}/browser-session")
+    async def browser_session(offer_id: str, body: BrowserOpen | None = None) -> dict[str, Any]:
+        """Plan B for the phone line: the driver's page talks to the same call agent through the browser."""
+        driver = body.driver if body else None
+        ctx = svc.browser_call_context(offer_id, driver)
+        try:
+            url = await asyncio.to_thread(tel.browser_session)
+        except VoiceError as e:
+            s.log("telephony", "browser_call_unavailable", {"offer": offer_id, "reason": e.message})
+            raise ApiError(409, "browser_call_unavailable", e.message) from e
+        return {"signed_url": url, **ctx}
+
+    @r.post("/offers/{offer_id}/browser-session/started")
+    async def browser_started(offer_id: str, body: BrowserStarted) -> dict[str, Any]:
+        svc.browser_call_started(offer_id, body.driver, body.conversation_id)
         return {"ok": True}
 
     @r.post("/telephony/test")

@@ -60,6 +60,14 @@ class Api:
             raise VoiceError(str(j.get("message") or "The call could not be placed."), "call_failed")
         return j.get("conversation_id"), j.get("callSid")
 
+    def signed_url(self, agent_id: str) -> str:
+        """A short-lived address a browser can open a voice conversation with, without ever holding the API key."""
+        j = self._do("GET", "/v1/convai/conversation/get-signed-url", params={"agent_id": agent_id})
+        url = j.get("signed_url")
+        if not url:
+            raise VoiceError("ElevenLabs gave no address for the conversation.", "no_signed_url")
+        return str(url)
+
     def conversation(self, conversation_id: str) -> dict[str, Any]:
         return self._do("GET", f"/v1/convai/conversations/{conversation_id}")
 

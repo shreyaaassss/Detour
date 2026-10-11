@@ -51,6 +51,7 @@ class TelephonyService:
         self.api = api or (Api(settings.api_key) if settings.api_key else None)
         self.deliver: Deliver = deliver or (lambda fn: fn())
         self.placed = 0
+        self.browser_sessions = 0
         self.history: list[dict[str, Any]] = []
         self._lock = threading.Lock()
 
@@ -68,6 +69,17 @@ class TelephonyService:
             return False, f"the limit of {self.s.max_calls} calls for this run was reached"
         return True, ""
 
+    def browser_missing(self) -> list[str]:
+        """What the in-browser voice call still needs. It uses no phone line, so no number and no DETOUR_CALLS."""
+        out = []
+        if not self.s.api_key:
+            out.append("ELEVENLABS_API_KEY")
+        if not self.s.agent_id:
+            out.append("the call agent (run: uv run python -m detour.telephony.setup)")
+        if self.browser_sessions >= self.s.max_calls:
+            out.append(f"the limit of {self.s.max_calls} calls for this run was reached")
+        return out
+
     def language_for(self, driver_language: str) -> str:
         return driver_language if self.s.language == "driver" else self.s.language
 
@@ -78,6 +90,8 @@ class TelephonyService:
             "missing": self.s.missing(),
             "language": self.s.language,
             "numbers": {k: mask(v) for k, v in self.s.phones.items()},
+            "browser_ready": not self.browser_missing(),
+            "browser_missing": self.browser_missing(),
             "placed": self.placed,
             "limit": self.s.max_calls,
             "public_url_set": bool(self.s.public_url),
@@ -146,6 +160,51 @@ class TelephonyService:
             for outcome, how in run.next_events(reading, time.time() - started, ring_seconds):
                 send(outcome, how)
         self._note(offer_id, "ended")
+
+    # --- a conversation held in the driver's own browser (no phone line) -------------------------------------
+    def browser_session(self) -> str:
+        """The signed address for one browser conversation with the call agent."""
+        miss = self.browser_missing()
+        if miss or self.api is None or self.s.agent_id is None:
+            raise VoiceError("The voice call is not set up: " + ", ".join(miss), "browser_not_ready")
+        url = self.api.signed_url(self.s.agent_id)
+        with self._lock:
+            self.browser_sessions += 1
+        return url
+
+    def watch(
+        self,
+        offer_id: str,
+        conversation_id: str,
+        *,
+        ring_seconds: int,
+        on_event: Callable[[str, str, str | None], None],
+        is_open: Callable[[], bool],
+    ) -> None:
+        """Follow a conversation the browser started, and report its outcome exactly as a phone call would."""
+        assert self.api is not None
+        threading.Thread(
+            target=self._follow,
+            daemon=True,
+            args=(self.api, offer_id, conversation_id, ring_seconds, on_event, is_open),
+        ).start()
+
+    def _follow(self, api: Api, offer_id, cid, ring_seconds, on_event, is_open) -> None:
+        send = lambda outcome, how=None: self.deliver(lambda: on_event(offer_id, outcome, how))  # noqa: E731
+        self._note(offer_id, "browser call", f"conversation {cid}")
+        run = CallRun(offer_id)
+        started = time.time()
+        while not run.finished and is_open():
+            try:
+                reading = read_conversation(api.conversation(cid))
+            except VoiceError:
+                reading = None  # a missed poll is fine; the app's own timers still apply
+            if reading is not None:
+                for outcome, how in run.next_events(reading, time.time() - started, ring_seconds):
+                    send(outcome, how)
+            if not run.finished:
+                time.sleep(POLL_SECONDS)
+        self._note(offer_id, "browser call ended")
 
     # --- the agent's tool calls us --------------------------------------------------------------------------------
     def check_secret(self, given: str | None) -> bool:

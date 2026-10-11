@@ -134,6 +134,14 @@ export interface VoiceStatus {
 
 export interface TelephonyStatus {
   enabled: boolean; ready: boolean; missing: string[]; language: string; numbers: Record<string, string>
+  browser_ready: boolean; browser_missing: string[]
   placed: number; limit: number; public_url_set: boolean
   recent: { offer: string; what: string; detail: string; at: number }[]
+}
+
+export interface BrowserSession {
+  signed_url: string
+  first_message: string
+  language: string
+  variables: Record<string, string>
 }

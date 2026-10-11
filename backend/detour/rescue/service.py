@@ -767,15 +767,14 @@ class RescueService:
         tel = self.calls
         if tel is None:
             return
-        lang = tel.language_for(call.language)
-        facts = self._facts(inc)
-        plain = {k: (v.get(lang, v["en"]) if isinstance(v, dict) else v) for k, v in facts.items()}
+        ctx = self._call_context(inc, call, tel)
+        lang = ctx["language"]
         started = tel.start(
             call.id,
             call.driver,
-            script=call.script.get(lang) or call.script["en"],
+            script=ctx["first_message"],
             language=lang,
-            variables={**plain, "driver": call.driver or ""},
+            variables=ctx["variables"],
             ring_seconds=int(self.cfg.ring_timeout),
             on_event=self._from_call,
             is_open=lambda: call.status == "open",
@@ -784,6 +783,47 @@ class RescueService:
             "system",
             "real_call_started" if started else "real_call_skipped",
             {"incident": inc.id, "offer": call.id, "driver": call.driver, "language": lang},
+        )
+
+    def _call_context(self, inc: Incident, call: Offer, tel: Any) -> dict[str, Any]:
+        """What the call agent is told: the engine's own script, in the call language, and the facts it may repeat."""
+        lang = tel.language_for(call.language)
+        plain = {k: (v.get(lang, v["en"]) if isinstance(v, dict) else v) for k, v in self._facts(inc).items()}
+        return {
+            "first_message": call.script.get(lang) or call.script["en"],
+            "language": lang,
+            "variables": {**plain, "driver": call.driver or "", "offer_id": call.id},
+        }
+
+    def _open_call(self, offer_id: str, driver: str | None) -> tuple[Incident, Offer]:
+        off = self.offers.get(offer_id)
+        if off is None:
+            raise ApiError(404, "unknown_offer", f"no offer {offer_id}")
+        inc = self._get(off.incident_id)
+        if off.channel != "call" or off.status != "open" or inc.state != "CALL_ESCALATED":
+            raise ApiError(409, "offer_closed", "This call is already finished. Nothing was changed.")
+        if driver is not None and off.driver != driver:
+            raise ApiError(403, "not_your_call", "This call is for another driver.")
+        return inc, off
+
+    def browser_call_context(self, offer_id: str, driver: str | None) -> dict[str, Any]:
+        """The script and facts for a voice conversation held in the driver's own browser."""
+        inc, off = self._open_call(offer_id, driver)
+        assert self.calls is not None
+        return self._call_context(inc, off, self.calls)
+
+    def browser_call_started(self, offer_id: str, driver: str | None, conversation_id: str) -> None:
+        """The driver's browser connected to the call agent: the call is answered, and we follow it to its outcome."""
+        inc, off = self._open_call(offer_id, driver)
+        assert self.calls is not None
+        self._log("driver", "browser_call_started", {"incident": inc.id, "offer": off.id, "driver": off.driver})
+        self.telephony_event(offer_id, "answered")
+        self.calls.watch(
+            offer_id,
+            conversation_id,
+            ring_seconds=int(self.cfg.ring_timeout),
+            on_event=self._from_call,
+            is_open=lambda: off.status == "open",
         )
 
     def _from_call(self, offer_id: str, outcome: str, how: str | None = None) -> None:

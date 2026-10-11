@@ -63,3 +63,15 @@ ElevenLabs bills the call by conversation time on your plan, and Twilio bills th
 The agent was tested against ElevenLabs' own conversation simulator: confirm by voice, no by voice, 1, 2, an unclear answer twice, and an off-topic
 question (it refuses to discuss anything but the answer). The code is tested against a faked phone line. **No real call has been placed** until a
 number is connected.
+
+## Plan B: the call in the driver's browser (no phone line)
+
+When the 60-second app offer times out, the rescue driver's page (`/driver?as=<name>`) shows a **Talk to the assistant now** button next to the countdown. Tapping it opens a live Hindi conversation with the same ElevenLabs agent, through the phone's microphone and speaker. Nothing is dialled, so no Twilio number or paid line is involved.
+
+- The page asks the server for the call (`POST /offers/{id}/browser-session`). The server checks the offer is open and belongs to that driver, then returns the engine's own script, the facts the agent may repeat, and a short-lived signed address. The ElevenLabs key never reaches the browser.
+- Browsers cannot send keypad tones, so the page has on-screen **1 · Accept** and **2 · Decline** buttons. They send the same "1" or "2" the agent already treats as a keypad answer. Speaking works too.
+- Once connected, the page tells the server the conversation id (`.../browser-session/started`). The server marks the call answered and follows the conversation until the agent records a decision, the same way it follows a phone call. This needs no public address, because it reads the conversation rather than waiting for the agent's webhook.
+- The same rules apply as for a phone call: one claim, a late answer is refused, an approval is void if the plan changed, and the simulate buttons remain as the fallback.
+- The microphone needs `https` (or `localhost`): use a tunnel such as `cloudflared tunnel --url http://localhost:5173` for phones.
+- It uses ElevenLabs conversation minutes. `DETOUR_MAX_CALLS` caps browser calls per run too.
+- Needs only `ELEVENLABS_API_KEY` and the agent from `uv run python -m detour.telephony.setup`. `DETOUR_CALLS` and phone numbers are not needed.
