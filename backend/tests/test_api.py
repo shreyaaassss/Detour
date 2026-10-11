@@ -68,6 +68,7 @@ def test_preview_changes_nothing_and_shows_the_diff(c):
     p = c.post("/disruptions/preview", json=failure_body()).json()
     assert p["diff"]["counts"]["moved"] == 2 and p["diff"]["counts"]["broken"] == 1
     assert p["report"]["valid"]
+    assert [v["status"] for v in p["scenario"]["vehicles"]].count("failed") == 1  # the proposal can be drawn
     after = c.get("/state").json()
     assert after["plan"] == before["plan"] and after["version"] == before["version"]
     assert "disruption_previewed" in actions(c) and "disruption_applied" not in actions(c)

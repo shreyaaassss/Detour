@@ -42,6 +42,7 @@ def _preview_json(p: Preview) -> dict[str, Any]:
         "as_of": r.now,
         "cause": r.cause,
         "plan": r.plan.model_dump(),
+        "scenario": r.scenario.model_dump(),  # so a screen can draw the proposal, closures and breakdowns included
         "diff": diff_json(p.diff),
         "report": r.report.as_dict(),
     }

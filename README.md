@@ -9,11 +9,12 @@ Spec: [docs/PRD.md](docs/PRD.md). Problem booklet: [docs/](docs/). How the engin
 
 ## Run
 ```
-cp .env.example .env        # then fill in keys
-cd backend && uv sync && uv run uvicorn detour.main:app --reload
-cd frontend && npm install && npm run dev
-cd backend && uv run pytest
+cp .env.example .env                                   # then fill in keys (not needed for the demo)
+cd backend && uv sync && uv run uvicorn detour.main:app --reload     # API on :8000
+cd frontend && npm install && npm run dev                            # dispatcher UI on :5173/dispatch
+cd backend && uv run pytest        cd frontend && npm test
 ```
+Add `?theme=light` to the URL to force the light theme.
 Phone demo: `cloudflared tunnel --url http://localhost:5173`, then set `PUBLIC_BASE_URL` in `.env`.
 
 ## Phases

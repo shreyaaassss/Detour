@@ -1,7 +1,14 @@
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 
-// https://vite.dev/config/
+const backend = process.env.DETOUR_API ?? 'http://localhost:8000'
+const api = ['state', 'plan', 'scenario', 'reset', 'presets', 'disruptions', 'validate', 'audit', 'events', 'health']
+
 export default defineConfig({
   plugins: [react()],
+  server: {
+    host: true,
+    proxy: Object.fromEntries(api.map((p) => [`/${p}`, { target: backend, changeOrigin: true }])),
+  },
+  test: { environment: 'node' },
 })
