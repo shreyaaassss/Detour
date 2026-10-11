@@ -1,4 +1,5 @@
 """Data model. Times are minutes since midnight."""
+
 from __future__ import annotations
 
 from typing import Literal
@@ -25,6 +26,18 @@ class Vehicle(_Frozen):
     available_from: float = 0
     shift_end: float = 24 * 60
     status: Literal["active", "failed"] = "active"
+    failed_at: float | None = None
+    failure_location: str | None = None
+
+
+class Pickup(_Frozen):
+    """A parcel that must be collected somewhere before it can be delivered: the breakdown
+    site for a rescued parcel, or the depot for an urgent one. Consecutive pickups at the same
+    place share one handover."""
+
+    location: str
+    ready_time: float
+    service_time: float = 5
 
 
 class Delivery(_Frozen):
@@ -35,6 +48,7 @@ class Delivery(_Frozen):
     window_end: float
     service_time: float = 5
     priority: bool = False
+    pickup: Pickup | None = None
 
 
 class Closure(_Frozen):
@@ -67,6 +81,8 @@ class Scenario(BaseModel):
             if v.start_location not in ids:
                 raise ValueError(f"vehicle {v.id}: unknown start location {v.start_location!r}")
         for d in self.deliveries:
+            if d.pickup is not None and d.pickup.location not in ids:
+                raise ValueError(f"delivery {d.id}: unknown pickup location {d.pickup.location!r}")
             if d.location not in ids:
                 raise ValueError(f"delivery {d.id}: unknown location {d.location!r}")
             if d.window_end < d.window_start:
@@ -90,9 +106,14 @@ class Scenario(BaseModel):
 
 
 class Stop(BaseModel):
+    """One visit. kind "pickup" collects the parcel `delivery_id`; kind "delivery" drops it.
+    `idle` is time the vehicle sat at its previous location before leaving (only after a
+    replan, when a vehicle had nothing to do until now)."""
+
     delivery_id: str
     location: str
-    kind: Literal["delivery"] = "delivery"
+    kind: Literal["delivery", "pickup"] = "delivery"
+    idle: float = 0.0
     arrival: float
     wait: float
     service_start: float
@@ -111,12 +132,13 @@ class Route(BaseModel):
 
     @property
     def delivery_ids(self) -> list[str]:
-        return [s.delivery_id for s in self.stops]
+        return [s.delivery_id for s in self.stops if s.kind == "delivery"]
 
 
 class Unplaced(BaseModel):
     delivery_id: str
     reason: str
+    vehicle_id: str | None = None  # the running vehicle the parcel is still aboard, if any
 
 
 class Plan(BaseModel):
@@ -126,6 +148,7 @@ class Plan(BaseModel):
     total_travel: float
     solver: str
     limits: list[str]
+    as_of: float | None = None
 
     def route(self, vehicle_id: str) -> Route:
         return next(r for r in self.routes if r.vehicle_id == vehicle_id)

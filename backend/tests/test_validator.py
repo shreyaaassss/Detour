@@ -201,9 +201,61 @@ def test_every_solver_plan_passes_validator(items, extra):
     vs = [Vehicle(id="V1", capacity=40, start_location="L0"), Vehicle(id="V2", capacity=25, start_location="L0")]
     closure = Closure(a="L0", b="L1", start=480, end=600, added_minutes=extra)
     sc = Scenario(
-        name="r", depot="L0", day_start=480, locations=locs, vehicles=vs, deliveries=ds,
-        matrix=derive_matrix(locs), closures=[closure],
+        name="r",
+        depot="L0",
+        day_start=480,
+        locations=locs,
+        vehicles=vs,
+        deliveries=ds,
+        matrix=derive_matrix(locs),
+        closures=[closure],
     )
     plan = solve(sc)
     rep = validate(sc.model_dump(), plan.model_dump())
     assert rep.valid, rep.violations
+
+
+def rescue_fixture():
+    from detour.engine.disruptions import VehicleFailure
+    from detour.engine.models import parse_hhmm
+    from detour.engine.replan import replan
+    from detour.engine.scenario import DEMO_BASELINE, demo_scenario
+    from detour.engine.solver import plan_from_sequences
+
+    sc = demo_scenario()
+    res = replan(
+        sc,
+        plan_from_sequences(sc, DEMO_BASELINE),
+        VehicleFailure(vehicle_id="V2", time=parse_hhmm("14:05"), location="hadapsar"),
+    )
+    return res.scenario.model_dump(), res.plan.model_dump()
+
+
+def test_rescue_plan_validates_and_pickup_rules_bite():
+    s, p = rescue_fixture()
+    assert validate(s, p).valid
+
+    s, p = rescue_fixture()  # delivery before pickup
+    r = next(r for r in p["routes"] if any(x["kind"] == "pickup" for x in r["stops"]))
+    pk = next(i for i, x in enumerate(r["stops"]) if x["kind"] == "pickup" and x["delivery_id"] == "D7")
+    dl = next(i for i, x in enumerate(r["stops"]) if x["kind"] == "delivery" and x["delivery_id"] == "D7")
+    r["stops"][pk], r["stops"][dl] = r["stops"][dl], r["stops"][pk]
+    assert "PICKUP_ORDER" in validate(s, p).codes()
+
+    s, p = rescue_fixture()  # parcel carried without being collected
+    r = next(r for r in p["routes"] if any(x["kind"] == "pickup" for x in r["stops"]))
+    r["stops"] = [x for x in r["stops"] if not (x["kind"] == "pickup" and x["delivery_id"] == "D7")]
+    assert "MISSING_PICKUP" in validate(s, p).codes()
+
+    s, p = rescue_fixture()  # pickup somewhere other than the breakdown site
+    r = next(r for r in p["routes"] if any(x["kind"] == "pickup" for x in r["stops"]))
+    next(x for x in r["stops"] if x["kind"] == "pickup")["location"] = "camp"
+    assert "PICKUP_LOCATION" in validate(s, p).codes()
+
+
+def test_pickup_before_ready_time_is_caught():
+    s, p = rescue_fixture()
+    r = next(r for r in p["routes"] if any(x["kind"] == "pickup" for x in r["stops"]))
+    pk = next(x for x in r["stops"] if x["kind"] == "pickup")
+    pk["arrival"] -= 40  # claims to arrive long before the vehicle could
+    assert "TIME_MISMATCH" in validate(s, p).codes()

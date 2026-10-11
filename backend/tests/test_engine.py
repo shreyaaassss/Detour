@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from detour.engine.models import Closure, Delivery, Location, Scenario, Vehicle
 from detour.engine.scenario import demo_scenario, derive_matrix, load_csv_dir, load_json
-from detour.engine.solver import _construct, _State, solve
+from detour.engine.solver import Search, fresh_problem, order_key, solve
 from detour.engine.travel import TravelModel
 
 
@@ -31,11 +31,22 @@ def check_plan(sc: Scenario, plan):
 
 
 def tiny(deliveries, vehicles=None, closures=()):
-    locs = [Location(id="depot", name="Depot", x=0, y=0), Location(id="a", name="A", x=20, y=0),
-            Location(id="b", name="B", x=0, y=40)]
+    locs = [
+        Location(id="depot", name="Depot", x=0, y=0),
+        Location(id="a", name="A", x=20, y=0),
+        Location(id="b", name="B", x=0, y=40),
+    ]
     vehicles = vehicles or [Vehicle(id="V1", capacity=30, start_location="depot")]
-    return Scenario(name="t", depot="depot", day_start=480, locations=locs, vehicles=vehicles,
-                    deliveries=deliveries, matrix=derive_matrix(locs), closures=list(closures))
+    return Scenario(
+        name="t",
+        depot="depot",
+        day_start=480,
+        locations=locs,
+        vehicles=vehicles,
+        deliveries=deliveries,
+        matrix=derive_matrix(locs),
+        closures=list(closures),
+    )
 
 
 def test_demo_plan_valid_and_complete():
@@ -52,9 +63,10 @@ def test_deterministic():
 
 def test_local_search_not_worse_than_construction():
     sc = demo_scenario()
-    state = _State(sc, TravelModel(sc.matrix))
-    _construct(state, sorted(sc.deliveries, key=lambda d: (d.window_end, not d.priority, -d.size, d.id)))
-    assert solve(sc).total_travel <= state.total() + 1e-9
+    se = Search(fresh_problem(sc))
+    for d in sorted(sc.deliveries, key=order_key):
+        se.insert_job(d.id)
+    assert solve(sc).total_travel <= se.total_obj()[1] + 1e-9
 
 
 def test_unplaceable_too_big():
@@ -69,8 +81,10 @@ def test_unplaceable_window_closes_before_arrival():
 
 
 def test_unplaceable_vehicles_full():
-    ds = [Delivery(id="A1", location="a", size=25, window_start=480, window_end=900),
-          Delivery(id="A2", location="a", size=25, window_start=480, window_end=900)]
+    ds = [
+        Delivery(id="A1", location="a", size=25, window_start=480, window_end=900),
+        Delivery(id="A2", location="a", size=25, window_start=480, window_end=900),
+    ]
     plan = solve(tiny(ds))
     assert len(plan.unplaced) == 1
     assert "too full" in plan.unplaced[0].reason
@@ -78,8 +92,10 @@ def test_unplaceable_vehicles_full():
 
 def test_unplaceable_window_conflict():
     # both only reachable in the same short window at far apart places: one must be dropped
-    ds = [Delivery(id="A1", location="a", size=5, window_start=490, window_end=495, service_time=30),
-          Delivery(id="B1", location="b", size=5, window_start=490, window_end=500, service_time=30)]
+    ds = [
+        Delivery(id="A1", location="a", size=5, window_start=490, window_end=495, service_time=30),
+        Delivery(id="B1", location="b", size=5, window_start=490, window_end=500, service_time=30),
+    ]
     plan = solve(tiny(ds))
     assert len(plan.unplaced) == 1
     assert "window" in plan.unplaced[0].reason
@@ -116,8 +132,11 @@ def test_csv_load(tmp_path):
 
     w("locations.csv", ["id", "name", "x", "y"], [["depot", "Depot", 0, 0], ["a", "A", 20, 0]])
     w("vehicles.csv", ["id", "capacity", "driver"], [["V1", 30, "Asha"]])
-    w("deliveries.csv", ["id", "location", "size", "window_start", "window_end", "service_time", "priority"],
-      [["D1", "a", 10, "08:30", "10:00", 5, "yes"]])
+    w(
+        "deliveries.csv",
+        ["id", "location", "size", "window_start", "window_end", "service_time", "priority"],
+        [["D1", "a", 10, "08:30", "10:00", 5, "yes"]],
+    )
     sc = load_csv_dir(tmp_path, "csv", "depot")
     plan = solve(sc)
     check_plan(sc, plan)
@@ -128,14 +147,18 @@ def test_csv_load(tmp_path):
 @given(
     st.lists(
         st.tuples(st.integers(1, 30), st.integers(0, 4), st.integers(0, 300), st.integers(10, 300)),
-        min_size=1, max_size=10,
+        min_size=1,
+        max_size=10,
     )
 )
 def test_random_plans_always_valid(items):
     locs = [Location(id=f"L{i}", name=f"L{i}", x=i * 13 % 50, y=i * 29 % 50) for i in range(5)]
-    ds = [Delivery(id=f"D{i}", location=f"L{loc}", size=size, window_start=480 + ws, window_end=480 + ws + width)
-          for i, (size, loc, ws, width) in enumerate(items)]
+    ds = [
+        Delivery(id=f"D{i}", location=f"L{loc}", size=size, window_start=480 + ws, window_end=480 + ws + width)
+        for i, (size, loc, ws, width) in enumerate(items)
+    ]
     vs = [Vehicle(id="V1", capacity=40, start_location="L0"), Vehicle(id="V2", capacity=25, start_location="L0")]
-    sc = Scenario(name="r", depot="L0", day_start=480, locations=locs, vehicles=vs, deliveries=ds,
-                  matrix=derive_matrix(locs))
+    sc = Scenario(
+        name="r", depot="L0", day_start=480, locations=locs, vehicles=vs, deliveries=ds, matrix=derive_matrix(locs)
+    )
     check_plan(sc, solve(sc))
