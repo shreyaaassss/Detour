@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from detour.api import create_app, default_audit_path
 from detour.parsing.llm import OpenAIReader
 from detour.rescue.service import RescueConfig
+from detour.voice.service import from_env
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
@@ -30,4 +31,7 @@ def _reader() -> OpenAIReader | None:
     return OpenAIReader(key, os.environ.get("OPENAI_MODEL", "gpt-4o-mini"))
 
 
-app = create_app(default_audit_path(), rescue_config=_config(), llm=_reader())
+_audit = default_audit_path()
+app = create_app(
+    _audit, rescue_config=_config(), llm=_reader(), voice=from_env(dict(os.environ), _audit.parent / "audio")
+)

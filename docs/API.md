@@ -20,6 +20,17 @@ Send `X-Actor: <name>` to record who acted (defaults to `dispatcher`). The audit
 | `GET /audit?limit=&after=`, `GET /audit/verify` | The audit log and a hash-chain check |
 | `GET /events` | Server-sent events: `hello`, `state` (refetch `/state`), `audit` |
 
+### Voice
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /voice/status` | Whether ElevenLabs is on, models, this run's spend, saved lines, account credits |
+| `GET /voice/audio?what=readback\|offer\|note&ref=&lang=` | Speak something the system produced, by id. Never free text. Supports byte ranges |
+| `POST /incidents/voice?driver=Ravi` (raw audio body) | A spoken report: transcript and the new incident. 503 if transcription is unavailable, so the phone falls back |
+| `POST /voice/warm` | Prepare the demo story's voice lines ahead of time |
+
+See [VOICE.md](VOICE.md).
+
 ### Rescue flow
 
 | Endpoint | Purpose |

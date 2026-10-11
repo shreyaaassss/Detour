@@ -4,13 +4,14 @@ import { defineConfig } from 'vitest/config'
 const backend = process.env.DETOUR_API ?? 'http://localhost:8000'
 const api = [
   'state', 'plan', 'scenario', 'reset', 'presets', 'disruptions', 'validate', 'audit', 'events', 'health',
-  'incidents', 'offers', 'telephony', 'clock', 'notifications', 'messages', 'interpreter',
+  'incidents', 'offers', 'telephony', 'clock', 'notifications', 'messages', 'interpreter', 'voice',
 ]
 
 export default defineConfig({
   plugins: [react()],
   server: {
     host: true,
+    allowedHosts: true, // dev only: lets a tunnel such as cloudflared reach the dev server by its own hostname
     proxy: Object.fromEntries(api.map((p) => [`/${p}`, { target: backend, changeOrigin: true }])),
   },
   test: { environment: 'node' },

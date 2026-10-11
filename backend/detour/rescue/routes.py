@@ -18,6 +18,7 @@ class ReportBody(BaseModel):
     location_id: str | None = None  # the driver picked the place from the list
     breakdown: bool | None = None  # the driver pressed "Vehicle broke down"
     source: Literal["text", "voice", "buttons"] = "text"
+    engine: Literal["elevenlabs", "browser", "typed"] | None = None  # what turned speech into this text
 
 
 class ConfirmBody(BaseModel):
@@ -57,7 +58,9 @@ def build_router(s: Session, svc: RescueService) -> APIRouter:
 
     @r.post("/incidents/report")
     async def report(body: ReportBody) -> dict[str, Any]:
-        inc = svc.report(body.driver, body.transcript, body.language, body.location_id, body.breakdown, body.source)
+        inc = svc.report(
+            body.driver, body.transcript, body.language, body.location_id, body.breakdown, body.source, body.engine
+        )
         return {"server_time": svc.wall(), "incident": svc.incident_view(inc)}
 
     @r.get("/incidents")

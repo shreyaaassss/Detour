@@ -121,6 +121,7 @@ class RescueService:
         location_id: str | None = None,
         breakdown: bool | None = None,
         source: str = "text",
+        engine: str | None = None,
     ) -> Incident:
         sc = self.s.scenario
         veh = self._vehicle_of(driver)
@@ -154,7 +155,14 @@ class RescueService:
         self._log(
             inc.driver,
             "incident_reported",
-            {"incident": inc.id, "vehicle": veh.id, "transcript": transcript, "source": source, "language": lang},
+            {
+                "incident": inc.id,
+                "vehicle": veh.id,
+                "transcript": transcript,
+                "source": source,
+                "language": lang,
+                "engine": engine,
+            },
         )
 
         if loc is None:
@@ -753,6 +761,23 @@ class RescueService:
             "config": self.cfg.__dict__,
             "incidents": [self.incident_view(i) for i in self.incidents.values()],
         }
+
+    def speakable(self, what: str, ref: str, lang: str) -> str:
+        """The exact sentence for something the system produced. Voice speaks only these."""
+        text: str | None = None
+        if what == "readback":
+            text = self._get(ref).readback.get(lang)
+        elif what == "offer":
+            off = self.offers.get(ref)
+            text = off.text.get(lang) if off else None
+        elif what == "note":
+            n = next((x for x in self.notes if str(x.id) == ref), None)
+            text = n.text.get(lang) if n else None
+        else:
+            raise ApiError(422, "bad_kind", "Voice can speak a readback, an offer or a note.")
+        if not text:
+            raise ApiError(404, "nothing_to_say", "There is nothing to say for that.")
+        return text
 
     def open_offers(self, driver: str) -> list[dict[str, Any]]:
         return [

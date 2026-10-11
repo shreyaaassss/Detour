@@ -12,3 +12,4 @@ dist/
 backend/data/*.json
 
 backend/data/*.jsonl
+backend/data/audio/

@@ -124,3 +124,10 @@ export interface ParseInfo {
   known_locations: { id: string; name: string }[]
 }
 export interface Interpreter { mode: 'llm' | 'rules'; model: string | null }
+
+export interface VoiceStatus {
+  enabled: boolean; tts_model: string | null; stt_model: string | null
+  budget: { spent: number; limit: number }
+  cache: { files: number; hits: number; misses: number; errors: number }
+  account: { used: number; limit: number } | null
+}

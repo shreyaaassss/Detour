@@ -1,6 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { api, ApiError } from '../api'
+import { audioUrl, setSound, useSound } from '../audio'
 import { Countdown } from '../components/Countdown'
+import { Listen } from '../components/Listen'
+import { Mic } from '../components/Mic'
 import { Glyph } from '../components/ui'
 import { LANGS, pick, ui, type Lang } from '../i18n'
 import type { Incident, Offer } from '../types'
@@ -26,7 +29,11 @@ export default function Driver() {
   const [langPick, setLangPick] = useState<Lang | null>(() => store.get(KEY_LANG) as Lang | null)
   const lang: Lang = langPick ?? (mine?.language as Lang) ?? 'en'
 
-  const offers = useLive(() => (name ? api.offers(name) : Promise.resolve({ offers: [] as Offer[] })), ['incident', 'notify', 'state'])
+  const offers = useLive(
+    () => (name ? api.offers(name) : Promise.resolve({ offers: [] as Offer[] })),
+    ['incident', 'notify', 'state'],
+    name, // reload as soon as we know who this is, so an offer that is already open shows up
+  )
   const { notes } = useNotes(`driver:${name}`)
 
   const incidents = (overview.data?.incidents ?? []).filter((i) => i.driver === name)
@@ -34,6 +41,9 @@ export default function Driver() {
   const push = offers.data?.offers.find((o) => o.channel === 'push')
   const ringing = current?.active_offer?.channel === 'call' && current.active_offer.driver === name ? current.active_offer : null
   const cfg = overview.data?.config
+  const sound = useSound()
+  const [serverStt, setServerStt] = useState<boolean | null>(null) // null until the server says
+  useEffect(() => { api.voiceStatus().then((v) => setServerStt(v.enabled)).catch(() => setServerStt(false)) }, [])
 
   function chooseMe(v: string) { setMe(v); store.set(KEY_ME, v) }
   function chooseLang(l: Lang) { setLangPick(l); store.set(KEY_LANG, l) }
@@ -52,6 +62,9 @@ export default function Driver() {
             <button key={l.id} aria-pressed={lang === l.id} onClick={() => chooseLang(l.id)}>{l.label}</button>
           ))}
         </div>
+        <button className="btn quiet" aria-pressed={sound} onClick={() => setSound(!sound)} title={sound ? ui('soundOn', lang) : ui('soundOff', lang)}>
+          {sound ? '🔊' : '🔇'}
+        </button>
         <span className="live" role="status" title={connected ? 'Live' : 'Reconnecting'}><span className={`dot ${connected ? 'on' : ''}`} /></span>
       </header>
 
@@ -71,7 +84,7 @@ export default function Driver() {
         )}
         {!push && !ringing && (!current || ['COMMITTED', 'EXHAUSTED', 'REJECTED', 'CANCELLED'].includes(current.state)) && state && (
           <ReportForm key={name} driver={name} lang={lang} places={state.scenario.locations.map((l) => ({ id: l.id, name: l.name }))}
-            onSent={overview.reload} again={current != null} />
+            onSent={overview.reload} again={current != null} serverStt={serverStt} />
         )}
 
         <section aria-labelledby="feed-h" style={{ marginTop: 22 }}>
@@ -101,6 +114,9 @@ function OfferCard({ offer, lang, total, onDone }: { offer: Offer; lang: Lang; t
         <p className="offertext">{pick(offer.text, lang)}</p>
         <Countdown deadline={offer.deadline} total={total} label={ui('secondsLeft', lang)} />
       </div>
+      <div style={{ margin: '0 0 12px' }}>
+        <Listen id={offer.id} url={audioUrl('offer', offer.id, lang)} text={pick(offer.text, lang)} lang={lang} />
+      </div>
       <div className="twobtn">
         <button className="btn primary huge" onClick={() => answer('accept')} disabled={busy}>{ui('accept', lang)}</button>
         <button className="btn huge" onClick={() => answer('decline')} disabled={busy}>{ui('decline', lang)}</button>
@@ -120,7 +136,13 @@ function Status({ incident, lang, notes, reload }: { incident: Incident; lang: L
     return (
       <section className="bigcard attention">
         <h2 className="h">{ui('confirmTitle', lang)}</h2>
+        {incident.source === 'voice' && incident.transcript && (
+          <p className="small muted" style={{ margin: '0 0 8px' }}>{ui('youSaid', lang)}: “{incident.transcript}”</p>
+        )}
         <p className="offertext">{pick(incident.readback, lang)}</p>
+        <div style={{ margin: '0 0 12px' }}>
+          <Listen id={`${incident.id}-${incident.location_id}`} url={audioUrl('readback', incident.id, lang)} text={pick(incident.readback, lang)} lang={lang} />
+        </div>
         {changing ? (
           <div className="places">
             {(incident.known_locations.length ? incident.known_locations : []).map((p) => (
@@ -148,6 +170,7 @@ function Status({ incident, lang, notes, reload }: { incident: Incident; lang: L
     return (
       <section className="bigcard good" role="status">
         <p className="offertext">{pick(t?.text, lang) || incident.result}</p>
+        {t && <Listen id={`note-${t.id}`} url={audioUrl('note', t.id, lang)} text={pick(t.text, lang)} lang={lang} />}
       </section>
     )
   }
@@ -163,8 +186,8 @@ function Status({ incident, lang, notes, reload }: { incident: Incident; lang: L
   )
 }
 
-function ReportForm({ driver, lang, places, onSent, again }: {
-  driver: string; lang: Lang; places: { id: string; name: string }[]; onSent: () => void; again: boolean
+function ReportForm({ driver, lang, places, onSent, again, serverStt }: {
+  driver: string; lang: Lang; places: { id: string; name: string }[]; onSent: () => void; again: boolean; serverStt: boolean | null
 }) {
   const [text, setText] = useState('')
   const [pickPlace, setPickPlace] = useState(false)
@@ -187,8 +210,8 @@ function ReportForm({ driver, lang, places, onSent, again }: {
   return (
     <section className="bigcard">
       <h2 className="h">{again ? ui('again', lang) : ui('title', lang)}</h2>
-      <button className="btn mic" disabled aria-describedby="mic-note"><Glyph name="breakdown" size={28} /></button>
-      <p className="small muted" id="mic-note" style={{ margin: '6px 0 12px' }}>{ui('micOff', lang)}</p>
+      <Mic driver={driver} lang={lang} serverStt={serverStt} onReported={() => onSent()} />
+      <div style={{ height: 14 }} />
       <label className="field">{ui('whatHappened', lang)}
         <textarea rows={3} value={text} placeholder={ui('placeholder', lang)} onChange={(e) => setText(e.target.value)} />
       </label>

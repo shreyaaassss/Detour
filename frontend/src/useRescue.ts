@@ -5,7 +5,11 @@ import { serverNow } from './serverTime'
 import type { Note, RescueOverview } from './types'
 
 /** Run `load` now and again whenever the server says something changed. */
-export function useLive<T>(load: () => Promise<T>, types: string[] = ['state', 'incident', 'notify']): {
+export function useLive<T>(
+  load: () => Promise<T>,
+  types: string[] = ['state', 'incident', 'notify'],
+  key = '',
+): {
   data: T | null; reload: () => void; connected: boolean; error: string | null
 } {
   const [data, setData] = useState<T | null>(null)
@@ -22,14 +26,14 @@ export function useLive<T>(load: () => Promise<T>, types: string[] = ['state', '
       .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Cannot reach the server'))
   }, [])
 
-  const key = types.join(',')
+  const kinds = types.join(',')
   useEffect(() => {
     // the first load, then a refresh on every event that matters
     // oxlint-disable-next-line react/set-state-in-effect
     reload()
-    const kinds = key.split(',')
-    return subscribe((t) => { if (t === 'hello' || kinds.includes(t)) reload() }, setConnected)
-  }, [reload, key])
+    const list = kinds.split(',')
+    return subscribe((t) => { if (t === 'hello' || list.includes(t)) reload() }, setConnected)
+  }, [reload, kinds, key]) // `key` changes when what is being asked about changes, for example who is signed in
 
   return { data, reload, connected, error }
 }
@@ -40,7 +44,7 @@ export function useOverview() {
 
 /** A person's notification feed, newest first. */
 export function useNotes(to: string) {
-  const r = useLive<Note[]>(async () => (await api.notifications(to)).notifications.reverse(), ['notify', 'incident'])
+  const r = useLive<Note[]>(async () => (await api.notifications(to)).notifications.reverse(), ['notify', 'incident'], to)
   return { notes: r.data ?? [], reload: r.reload }
 }
 

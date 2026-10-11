@@ -237,3 +237,7 @@ textarea { width: 100%; border: 1px solid var(--line); background: var(--surface
 a { color: var(--focus); font-weight: 600; }
 
 .understood { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+
+.btn.mic.live { background: var(--broken-bg); border-color: var(--broken); animation: pulse 1.2s ease-in-out infinite; }
+.stopsq { width: 22px; height: 22px; background: var(--broken); border-radius: 4px; display: block; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 10px var(--broken-bg); } }

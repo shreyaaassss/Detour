@@ -24,6 +24,8 @@ from detour.rescue.clock import SimClock
 from detour.rescue.routes import build_router
 from detour.rescue.service import RescueConfig, RescueService
 from detour.session import ApiError, Preview, Session, diff_json
+from detour.voice.routes import build_router as build_voice_router
+from detour.voice.service import VoiceService
 
 
 class DisruptionBody(BaseModel):
@@ -68,6 +70,7 @@ def create_app(
     start_ticker: bool = True,
     rescue_config: RescueConfig | None = None,
     llm: Reader | None = None,
+    voice: VoiceService | None = None,
     clock: SimClock | None = None,
     wall=None,
 ) -> FastAPI:
@@ -96,7 +99,11 @@ def create_app(
     session = Session(audit, bus, clock or SimClock(wall=wall or time.time), llm)
     rescue = RescueService(session, rescue_config, **({"wall": wall} if wall else {}))
     app.state.session, app.state.bus, app.state.audit, app.state.rescue = session, bus, audit, rescue
+    voice = voice or VoiceService(None)
+    voice._log = lambda action, details: session.log("system", action, details)
+    app.state.voice = voice
     app.include_router(build_router(session, rescue))
+    app.include_router(build_voice_router(session, rescue, voice))
 
     if audit.archived:
         audit.append(

@@ -12,7 +12,7 @@ different browsers or devices if you can: a browser shares about six connections
 
 ## The story, step by step
 
-1. **Ravi reports.** On his screen he types what happened, or taps *Vehicle broke down* and a place. The app reads it
+1. **Ravi reports.** On his screen he taps the microphone and speaks, or types, or taps *Vehicle broke down* and a place. The app reads it
    back in his language ("हडपसर येथे गाडी बिघडली. डिलिव्हरी D7 ची वेळ 15:00. बरोबर आहे का?"). He taps yes.
    An unknown place, or two places, is rejected and he is asked to choose from the list. Nothing is guessed.
 2. **The head is alerted** with a ranked list of rescue drivers. Each is tried for real: the engine replans with that
@@ -75,5 +75,5 @@ driver no longer feasible; the next approved driver is offered.
 
 - The engine gives **D8 to Meera as well** (she is already collecting at Hadapsar), not to Arjun. D9 is broken as in the PRD.
 - Meera's pickup is two parcels at one handover (14:15 to 14:20), then D7 at 14:50 as in the PRD.
-- The voice steps (microphone, spoken read-back, the real phone call) are Phases 8 and 9. Until then the driver
-  types or taps, and the call is simulated from the dispatcher screen.
+- Spoken reports and spoken read-backs, offers and updates are in ([VOICE.md](VOICE.md)). The real phone call is Phase 9; until
+  then the call is simulated from the dispatcher screen.

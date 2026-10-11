@@ -4,6 +4,7 @@ import { hhmm, parseHhmm } from '../format'
 import { serverNow } from '../serverTime'
 import type { RescueOverview } from '../types'
 import { RescueStatus } from './RescueStatus'
+import { VoiceSection } from './VoiceSection'
 
 const DONE = ['COMMITTED', 'EXHAUSTED', 'CANCELLED', 'REJECTED']
 
@@ -54,6 +55,8 @@ export function RescuePanel({ ov, reload }: { ov: RescueOverview | null; reload:
           {' '}{ov.config.ring_timeout} s and talks for up to {ov.config.conversation_limit} s. The head has {ov.config.head_response} s before the backup is asked.
         </p>
       </section>
+
+      <VoiceSection />
 
       <h3 className="h">Rescues in progress</h3>
       {open.length === 0 && <p className="empty">No open rescues. Open the driver screen at /driver, report a breakdown, and it appears here.</p>}

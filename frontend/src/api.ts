@@ -1,7 +1,7 @@
 import { setServerTime } from './serverTime'
 import type {
   AppState, AuditView, CustomerMessage, Disruption, Incident, Interpreter, Note, Offer, ParseInfo, Plan, PreviewResult, Presets,
-  Proposal, Report, RescueOverview,
+  Proposal, Report, RescueOverview, VoiceStatus,
 } from './types'
 
 const ACTOR_KEY = 'detour.actor'
@@ -57,9 +57,22 @@ export const api = {
     call<{ parse: ParseInfo; preview: PreviewResult }>('POST', '/disruptions/parse', { text, source }),
   interpreter: () => call<Interpreter>('GET', '/interpreter'),
 
+  // voice
+  voiceStatus: () => call<VoiceStatus>('GET', '/voice/status'),
+  warmVoice: () => call<{ lines: number; generated: number; already_cached: number; characters: number; problems: string[] }>('POST', '/voice/warm'),
+  voiceReport: async (driver: string, language: string, audio: Blob) => {
+    const res = await fetch(`/incidents/voice?driver=${encodeURIComponent(driver)}&language=${language}`, {
+      method: 'POST', headers: { 'Content-Type': audio.type || 'audio/webm', 'X-Actor': getActor() }, body: audio,
+    })
+    const data = await res.json().catch(() => null)
+    if (data && typeof data.server_time === 'number') setServerTime(data.server_time)
+    if (!res.ok) throw new ApiError(res.status, data?.code ?? 'error', data?.message ?? res.statusText, data ?? {})
+    return data as { transcript: string; detected_language: string | null; incident: Incident }
+  },
+
   // rescue
   overview: () => call<RescueOverview>('GET', '/incidents'),
-  report: (b: { driver: string; transcript?: string; language?: string; location_id?: string; breakdown?: boolean; source?: string }) =>
+  report: (b: { driver: string; transcript?: string; language?: string; location_id?: string; breakdown?: boolean; source?: string; engine?: string }) =>
     call<{ incident: Incident }>('POST', '/incidents/report', b),
   confirmReport: (id: string, b: { confirmed?: boolean; location_id?: string }) =>
     call<{ incident: Incident }>('POST', `/incidents/${id}/confirm`, b),
