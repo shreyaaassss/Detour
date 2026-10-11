@@ -24,3 +24,10 @@ After changing `VITE_API_BASE`, redeploy: it is baked into the build.
 ## Checks
 - Open the site, choose **Open the dispatcher**, press **Reset demo**. The board should fill in and show "Live".
 - If it says "Reconnecting", the address in `VITE_API_BASE` is wrong or the server is still waking.
+
+## The contact form
+Messages from the website's contact page are kept on the server (`POST /site/contact`). To read them, set `DETOUR_ADMIN_KEY` to a long random value in Render's Environment tab, then:
+
+    curl -H "X-Detour-Admin: <your key>" https://<your-service>.onrender.com/site/inbox
+
+Without that key the inbox is closed to everyone. On Render's free plan the disk is temporary, so messages are lost when the server restarts or sleeps: read them soon, or move to a database before relying on it.

@@ -19,7 +19,7 @@ export function HeroMap() {
   return (
     <svg viewBox="0 0 600 500" role="img" className="art" preserveAspectRatio="xMidYMid slice"
       aria-label="A dark map of the demo delivery network. One van has broken down at Hadapsar and another drives over to collect its parcels and deliver them to Kothrud Clinic.">
-      <rect width="600" height="500" fill="#0c111b" />
+      <rect width="600" height="500" fill="#000000" />
       <g transform="rotate(-17 300 250)">
         <path d="M-80 420 C 120 380, 260 470, 420 430 S 640 360, 720 400" fill="none" stroke="#0a1a2c" strokeWidth="46" />
         <path d="M-80 420 C 120 380, 260 470, 420 430 S 640 360, 720 400" fill="none" stroke="#0d2136" strokeWidth="1.5" />
@@ -46,7 +46,7 @@ export function HeroMap() {
 
       {PLACES.map(([x, y, name, side]) => (
         <g key={name}>
-          <circle cx={x} cy={y} r="4.5" fill="#0c111b" stroke="#a0aaba" strokeWidth="1.6" />
+          <circle cx={x} cy={y} r="4.5" fill="#000000" stroke="#a0aaba" strokeWidth="1.6" />
           <text x={side === 'r' ? x + 10 : x - 10} y={y + 4} textAnchor={side === 'r' ? 'start' : 'end'} className="map-label">{name}</text>
         </g>
       ))}
@@ -55,10 +55,10 @@ export function HeroMap() {
       {/* the breakdown */}
       <g className="map-pulse"><circle cx="452" cy="318" r="15" fill="none" stroke="#ffffff" strokeWidth="1.5" /></g>
       <circle cx="452" cy="318" r="9" fill="#ffffff" />
-      <path d="M448 314l8 8M456 314l-8 8" stroke="#0c111b" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M448 314l8 8M456 314l-8 8" stroke="#000000" strokeWidth="2.2" strokeLinecap="round" />
 
       {/* what the dispatcher reads */}
-      <g transform="translate(24 24)">
+      <g transform="translate(96 74)">
         <rect width="252" height="92" rx="12" fill="#121927" stroke="#243146" />
         <text x="16" y="28" className="map-card-k">Rescue committed</text>
         <text x="16" y="52" className="map-card-v">D7 to Kothrud Clinic</text>

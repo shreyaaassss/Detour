@@ -205,3 +205,40 @@ def test_sse_stream_sends_hello(c):
         text = "".join(r.iter_text())
     assert r.headers["content-type"].startswith("text/event-stream")
     assert text.startswith("event: hello") and '"version"' in text
+
+
+def test_the_contact_form_keeps_a_message_and_rejects_a_bad_one(tmp_path):
+    from fastapi.testclient import TestClient
+
+    from detour.api import create_app
+
+    c = TestClient(create_app(tmp_path / "audit.jsonl", start_ticker=False))
+    ok = c.post(
+        "/site/contact", json={"name": "Asha", "email": "asha@example.com", "topic": "pilot", "message": "Hello there"}
+    )
+    assert ok.status_code == 200 and ok.json() == {"ok": True, "id": 1}
+    saved = (tmp_path / "contact.jsonl").read_text()
+    assert "asha@example.com" in saved and "Hello there" in saved
+    actions = [e for e in c.get("/audit?limit=50").json()["entries"] if e["action"] == "contact_message_received"]
+    assert actions and "asha@example.com" not in str(actions)  # the audit log notes it without the address
+    assert (
+        c.post("/site/contact", json={"name": "A", "email": "not-an-email", "message": "Hello there"}).status_code
+        == 422
+    )
+    assert c.post("/site/contact", json={"name": "A", "email": "a@b.co", "message": "Hi"}).status_code == 422
+
+
+def test_the_inbox_is_closed_without_the_admin_key(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from detour.api import create_app
+
+    c = TestClient(create_app(tmp_path / "audit.jsonl", start_ticker=False))
+    c.post("/site/contact", json={"name": "Asha", "email": "asha@example.com", "message": "Hello there"})
+    monkeypatch.delenv("DETOUR_ADMIN_KEY", raising=False)
+    assert c.get("/site/inbox").status_code == 404  # no key configured: nobody can read it
+    monkeypatch.setenv("DETOUR_ADMIN_KEY", "s3cret")
+    assert c.get("/site/inbox").status_code == 404
+    assert c.get("/site/inbox", headers={"X-Detour-Admin": "wrong"}).status_code == 404
+    got = c.get("/site/inbox", headers={"X-Detour-Admin": "s3cret"})
+    assert got.status_code == 200 and got.json()["messages"][0]["email"] == "asha@example.com"

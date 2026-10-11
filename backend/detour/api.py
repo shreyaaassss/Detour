@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import hmac
+import json
 import os
 import time
 from collections.abc import AsyncIterator
@@ -13,7 +15,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Header, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from detour.audit import AuditEntry, AuditLog
 from detour.engine.disruptions import Disruption
@@ -142,6 +144,33 @@ def create_app(
     async def health() -> dict[str, Any]:
         return {"status": "ok", "version": session.version, "audit_entries": len(audit.entries)}
 
+    # --- the website's contact form --------------------------------------------------------------
+    inbox: list[dict[str, Any]] = []
+    inbox_path = Path(audit_path).parent / "contact.jsonl" if audit_path else None
+
+    @app.post("/site/contact")
+    async def contact(body: ContactBody) -> dict[str, Any]:
+        """Keep a visitor's message on the server. Nothing is emailed: no outside service is involved."""
+        if len(inbox) >= MAX_CONTACT_MESSAGES:
+            raise ApiError(429, "inbox_full", "The inbox is full for now. Please try again later.")
+        note = {"id": len(inbox) + 1, "at": time.time(), **body.model_dump()}
+        inbox.append(note)
+        if inbox_path is not None:
+            with contextlib.suppress(OSError):
+                inbox_path.parent.mkdir(parents=True, exist_ok=True)
+                with inbox_path.open("a") as f:
+                    f.write(json.dumps(note, ensure_ascii=False) + "\n")
+        session.log("visitor", "contact_message_received", {"id": note["id"], "topic": body.topic})
+        return {"ok": True, "id": note["id"]}
+
+    @app.get("/site/inbox")
+    async def read_inbox(x_detour_admin: str | None = Header(None)) -> dict[str, Any]:
+        """The team reads the messages here. Closed unless DETOUR_ADMIN_KEY is set, and then only with that key."""
+        key = os.environ.get("DETOUR_ADMIN_KEY", "").strip()
+        if not key or not x_detour_admin or not hmac.compare_digest(key, x_detour_admin):
+            raise ApiError(404, "not_found", "Not found.")
+        return {"messages": inbox}
+
     # --- scenario and plan ------------------------------------------------------------------
     @app.get("/state")
     async def state() -> dict[str, Any]:
@@ -236,6 +265,16 @@ def create_app(
         )
 
     return app
+
+
+MAX_CONTACT_MESSAGES = 200
+
+
+class ContactBody(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    email: str = Field(min_length=3, max_length=120, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    topic: Literal["question", "feedback", "pilot", "other"] = "question"
+    message: str = Field(min_length=5, max_length=2000)
 
 
 def default_audit_path() -> Path:

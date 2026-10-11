@@ -59,6 +59,9 @@ export const api = {
     call<{ parse: ParseInfo; preview: PreviewResult }>('POST', '/disruptions/parse', { text, source }),
   interpreter: () => call<Interpreter>('GET', '/interpreter'),
 
+  contact: (b: { name: string; email: string; topic: string; message: string }) =>
+    call<{ ok: boolean; id: number }>('POST', '/site/contact', b),
+
   // phone line
   telephonyStatus: () => call<TelephonyStatus>('GET', '/telephony/status'),
   browserSession: (offerId: string, driver: string) =>
