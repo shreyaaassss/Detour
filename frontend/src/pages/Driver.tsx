@@ -75,7 +75,7 @@ export default function Driver() {
           <section className="bigcard attention">
             <h2 className="h">{ui('calling', lang)}</h2>
             <Countdown deadline={ringing.call_state === 'in_call' ? ringing.conversation_deadline : ringing.deadline}
-              total={ringing.call_state === 'in_call' ? cfg.conversation_limit : cfg.ring_timeout} label={ui('secondsLeft', lang)} />
+              total={ringing.call_state === 'in_call' ? cfg.conversation_limit : ringing.deadline - ringing.sent} label={ui('secondsLeft', lang)} />
             <BrowserCall offer={ringing} lang={lang} />
           </section>
         )}

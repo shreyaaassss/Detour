@@ -53,7 +53,7 @@ export function RescuePanel({ ov, reload }: { ov: RescueOverview | null; reload:
         {err && <p className="notice err" role="alert" style={{ marginTop: 8 }}>{err}</p>}
         <p className="small muted" style={{ marginTop: 8 }}>
           Offer timers always run in real seconds: {ov.config.push_timeout} s to answer the app, then a call that rings
-          {' '}{ov.config.ring_timeout} s and talks for up to {ov.config.conversation_limit} s. The head has {ov.config.head_response} s before the backup is asked.
+          {' '}{ov.config.ring_timeout} s ({ov.config.browser_ring_timeout} s for a browser call) and talks for up to {ov.config.conversation_limit} s. The head has {ov.config.head_response} s before the backup is asked.
         </p>
       </section>
 

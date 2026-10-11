@@ -39,7 +39,8 @@ class RescueConfig:
     push_timeout: float = 60.0  # required by the PRD
     driver_confirm: float = 30.0
     head_response: float = 120.0
-    ring_timeout: float = 25.0
+    ring_timeout: float = 25.0  # a phone that rings
+    browser_ring_timeout: float = 60.0  # no phone line: a person has to read the card, tap and allow the microphone
     conversation_limit: float = 45.0
     max_shortlist: int = 3
     max_reprompts: int = 3
@@ -723,6 +724,10 @@ class RescueService:
                 elif off.call_state == "in_call" and off.conversation_deadline and now >= off.conversation_deadline:
                     self._declined(inc, off, f"{off.driver} gave no clear answer on the call", "timed_out")
 
+    def _ring_seconds(self) -> float:
+        line = self.calls is not None and self.calls.ready()
+        return self.cfg.ring_timeout if line else self.cfg.browser_ring_timeout
+
     def _escalate_to_call(self, inc: Incident, push: Offer, now: float) -> None:
         self._n_off += 1
         call = Offer(
@@ -733,7 +738,7 @@ class RescueService:
             driver=push.driver,
             channel="call",
             sent=now,
-            deadline=now + self.cfg.ring_timeout,
+            deadline=now + self._ring_seconds(),
             call_state="ringing",
             text=push.text,
             script=push.script,
@@ -744,7 +749,7 @@ class RescueService:
         self._log(
             "system",
             "call_placed",
-            {"incident": inc.id, "offer": call.id, "driver": push.driver, "ring_s": self.cfg.ring_timeout},
+            {"incident": inc.id, "offer": call.id, "driver": push.driver, "ring_s": self._ring_seconds()},
         )
         self.notify(
             f"driver:{push.driver}", "calling", {"en": "We are calling you now. Please answer."}, inc, offer=call.id
@@ -775,7 +780,7 @@ class RescueService:
             script=ctx["first_message"],
             language=lang,
             variables=ctx["variables"],
-            ring_seconds=int(self.cfg.ring_timeout),
+            ring_seconds=int(self._ring_seconds()),
             on_event=self._from_call,
             is_open=lambda: call.status == "open",
         )
@@ -821,7 +826,7 @@ class RescueService:
         self.calls.watch(
             offer_id,
             conversation_id,
-            ring_seconds=int(self.cfg.ring_timeout),
+            ring_seconds=int(self._ring_seconds()),
             on_event=self._from_call,
             is_open=lambda: off.status == "open",
         )

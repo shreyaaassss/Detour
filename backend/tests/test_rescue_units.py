@@ -82,7 +82,7 @@ def test_the_simulated_clock_pauses_and_runs():
 
 
 def test_the_real_background_timer_escalates_to_a_call():
-    cfg = RescueConfig(push_timeout=0.3, ring_timeout=0.3, conversation_limit=0.3)
+    cfg = RescueConfig(push_timeout=0.3, ring_timeout=0.3, browser_ring_timeout=0.3, conversation_limit=0.3)
     app = create_app(None, rescue_config=cfg)
     with TestClient(app) as c:  # entering the client starts the ticker
         iid = c.post("/incidents/report", json={"driver": "Ravi", "transcript": "broke down near Hadapsar"}).json()[

@@ -20,7 +20,10 @@ class Rig:
     def __init__(self, tmp_path, **cfg) -> None:
         self.wall = Wall()
         self.app = create_app(
-            tmp_path / "audit.jsonl", start_ticker=False, rescue_config=RescueConfig(**cfg), wall=self.wall
+            tmp_path / "audit.jsonl",
+            start_ticker=False,
+            rescue_config=RescueConfig(**{"browser_ring_timeout": 25.0, **cfg}),
+            wall=self.wall,
         )
         self.c = TestClient(self.app)
         self.svc = self.app.state.rescue

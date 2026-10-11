@@ -23,7 +23,7 @@ export function RescueStatus({ inc, cfg, simulate = false }: { inc: Incident; cf
       {o && (
         <div className="row" style={{ gap: 14 }}>
           {o.channel === 'push' && <Countdown deadline={o.deadline} total={cfg.push_timeout} label="s left" size={84} />}
-          {o.channel === 'call' && o.call_state === 'ringing' && <Countdown deadline={o.deadline} total={cfg.ring_timeout} label="s ringing" size={84} />}
+          {o.channel === 'call' && o.call_state === 'ringing' && <Countdown deadline={o.deadline} total={o.deadline - o.sent} label="s ringing" size={84} />}
           {o.channel === 'call' && o.call_state === 'in_call' && <Countdown deadline={o.conversation_deadline} total={cfg.conversation_limit} label="s on call" size={84} />}
           <div>
             <b>{o.channel === 'push' ? 'App offer' : 'Phone call'} to {o.driver} ({o.vehicle_id})</b>

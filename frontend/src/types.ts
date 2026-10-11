@@ -105,7 +105,7 @@ export interface Incident {
   offers: Offer[]; active_offer: Offer | null
 }
 export interface RescueConfig {
-  push_timeout: number; driver_confirm: number; head_response: number; ring_timeout: number
+  push_timeout: number; driver_confirm: number; head_response: number; ring_timeout: number; browser_ring_timeout: number
   conversation_limit: number; max_shortlist: number
 }
 export interface RescueOverview {
