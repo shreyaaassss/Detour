@@ -502,3 +502,54 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--color-jet-blac
   .show-title { font-size: 28px; }
   .show-bar { position: sticky; bottom: 0; }
 }
+
+/* ======== the live demo: a conversation, turn by turn ======== */
+.show { grid-template-rows: auto minmax(0, 1fr) auto; }
+.show-top { background: transparent; border: 1px solid var(--color-iron-gray); color: var(--color-paper-white); border-radius: var(--radius-pill); padding: 6px 14px; font-size: 14px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.show-top:hover:not(:disabled) { border-color: var(--color-paper-white); }
+.show-top[aria-pressed='false'] { color: var(--color-ash-gray); }
+.sitenav-in { gap: 12px; }
+.show-feed { max-width: 860px; display: grid; gap: 14px; padding-bottom: 24px; }
+.show-sub { font-size: 24px; font-weight: 400; margin: 28px 0 4px; padding-top: 24px; border-top: 1px solid var(--line-2); }
+.show-go { margin-top: 20px; }
+.turn { animation: turnin 0.38s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@keyframes turnin { from { opacity: 0; transform: translateY(14px) scale(0.985); } }
+.turn-group { display: grid; gap: 14px; }
+.turn-who { font-size: 13px; color: var(--color-slate); margin-bottom: 6px; }
+.turn.said { justify-self: end; max-width: 80%; text-align: right; }
+.turn.said blockquote { margin: 0; display: inline-block; text-align: left; background: var(--ink); color: var(--color-paper-white); border-radius: 16px 16px 4px 16px; padding: 12px 18px; font-size: 19px; line-height: 1.4; }
+.turn.sys { background: var(--mist); border-radius: 16px 16px 16px 4px; padding: 18px 20px; max-width: 92%; display: grid; gap: 8px; border: 2px solid transparent; }
+.turn.sys.refuse { background: var(--surface); border-color: var(--ink); }
+.turn.sys.good { border-color: var(--ink); }
+.turn.wide { max-width: none; margin-top: 6px; }
+.turn-big { font-size: 20px; line-height: 1.4; font-weight: 500; }
+.turn-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.btn.big { padding: 12px 20px; font-size: 16px; min-height: 48px; }
+.btn, .say-hint, .say-mic, .show-top, .pill { transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
+.btn:active:not(:disabled), .say-hint:active:not(:disabled), .say-mic:active:not(:disabled) { transform: scale(0.97); }
+.btn.primary:hover:not(:disabled) { background: var(--color-charcoal); border-color: var(--color-charcoal); }
+.offer { display: flex; gap: 20px; align-items: center; justify-content: space-between; }
+.show-cands li { grid-template-columns: 28px minmax(0, 1fr); background: var(--surface); border: 1px solid var(--line-2); }
+.show-cands li.on { border: 2px solid var(--ink); padding: 15px; }
+.show-cands input[type='checkbox'] { width: 22px; height: 22px; margin-top: 2px; }
+.show-cands .rank { font-size: 18px; }
+
+.show-dock { border-top: 1px solid var(--line); background: var(--surface); padding: 14px 20px 16px; display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; animation: turnin 0.3s ease-out both; }
+.say { flex: 1; min-width: 280px; display: grid; gap: 10px; }
+.say-row { display: flex; gap: 12px; align-items: center; }
+.say-mic { width: 56px; height: 56px; flex: none; border-radius: 50%; border: 0; background: var(--ink); color: var(--color-paper-white); display: grid; place-items: center; cursor: pointer; }
+.say-mic.live { background: var(--surface); color: var(--ink); outline: 3px solid var(--ink); animation: micpulse 1.1s ease-in-out infinite; }
+@keyframes micpulse { 50% { outline-offset: 6px; outline-color: var(--color-ash-gray); } }
+.say-form { flex: 1; display: flex; gap: 8px; }
+.say-form input { font-size: 17px; padding: 14px 14px; }
+.say-form .btn { min-width: 96px; }
+.say-wave { display: flex; gap: 4px; align-items: center; height: 18px; padding-left: 70px; }
+.say-wave i { width: 4px; height: 100%; background: var(--ink); border-radius: 2px; animation: wave 0.9s ease-in-out infinite; }
+.say-wave i:nth-child(2) { animation-delay: 0.12s; } .say-wave i:nth-child(3) { animation-delay: 0.24s; } .say-wave i:nth-child(4) { animation-delay: 0.36s; } .say-wave i:nth-child(5) { animation-delay: 0.48s; }
+@keyframes wave { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+.say-hints { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--color-slate); }
+.say-hint { border: 1px solid var(--line); background: var(--mist); border-radius: var(--radius-pill); padding: 6px 12px; font-size: 13px; cursor: pointer; color: var(--ink); text-align: left; }
+.say-hint:hover:not(:disabled) { border-color: var(--ink); }
+.dock-extra { align-self: center; }
+@media (max-width: 900px) { .turn.said, .turn.sys { max-width: 100%; } .offer { flex-direction: column; align-items: flex-start; } }
+@media (prefers-reduced-motion: reduce) { .say-wave i, .say-mic.live { animation: none; } }
