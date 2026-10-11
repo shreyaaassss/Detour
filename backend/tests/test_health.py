@@ -1,7 +1,8 @@
 from fastapi.testclient import TestClient
 
-from detour.main import app
+from detour.api import create_app
 
 
 def test_health():
-    assert TestClient(app).get("/health").json() == {"status": "ok"}
+    body = TestClient(create_app(None)).get("/health").json()
+    assert body["status"] == "ok"

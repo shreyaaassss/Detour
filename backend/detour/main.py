@@ -1,8 +1,3 @@
-from fastapi import FastAPI
+from detour.api import create_app, default_audit_path
 
-app = FastAPI(title="DeTour")
-
-
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+app = create_app(default_audit_path())
