@@ -1,60 +1,69 @@
-/* Flat editorial illustrations. The interface stays black and white; the colour lives here, as in the design system. */
+/* The landing page's one visual: a dark map render of the fictional demo network, drawn here (no map service is used). */
 
-export function HeroArt() {
-  return (
-    <svg viewBox="0 0 480 400" role="img" aria-label="A delivery route with a broken-down van and a rescue van taking over its parcels" className="art">
-      <rect width="480" height="400" fill="#f1e6d4" />
-      <rect x="0" y="300" width="480" height="100" fill="#e7d6b8" />
-      <path d="M30 330 C 120 250, 190 330, 260 250 S 400 170, 450 110" fill="none" stroke="#fff" strokeWidth="26" strokeLinecap="round" />
-      <path d="M30 330 C 120 250, 190 330, 260 250 S 400 170, 450 110" fill="none" stroke="#2a6f7f" strokeWidth="4" strokeLinecap="round" strokeDasharray="2 12" />
-      <path d="M90 90 C 150 140, 240 120, 300 60" fill="none" stroke="#fff" strokeWidth="18" strokeLinecap="round" />
-      <g>
-        <rect x="60" y="262" width="92" height="52" rx="6" fill="#c4481a" />
-        <rect x="124" y="274" width="34" height="40" rx="5" fill="#a63a14" />
-        <rect x="130" y="280" width="22" height="14" rx="2" fill="#cfe7ec" />
-        <circle cx="86" cy="318" r="12" fill="#222" /><circle cx="86" cy="318" r="5" fill="#bbb" />
-        <circle cx="140" cy="318" r="12" fill="#222" /><circle cx="140" cy="318" r="5" fill="#bbb" />
-        <path d="M90 250 l12 -22 l12 22" fill="none" stroke="#222" strokeWidth="5" strokeLinejoin="round" />
-        <path d="M70 216 l16 -16 M86 216 l-16 -16" stroke="#222" strokeWidth="5" strokeLinecap="round" />
-      </g>
-      <g>
-        <rect x="300" y="170" width="92" height="52" rx="6" fill="#276ef1" />
-        <rect x="364" y="182" width="34" height="40" rx="5" fill="#1d55bd" />
-        <rect x="370" y="188" width="22" height="14" rx="2" fill="#dbe8ff" />
-        <circle cx="326" cy="226" r="12" fill="#222" /><circle cx="326" cy="226" r="5" fill="#bbb" />
-        <circle cx="380" cy="226" r="12" fill="#222" /><circle cx="380" cy="226" r="5" fill="#bbb" />
-        <rect x="312" y="150" width="22" height="20" rx="2" fill="#e9b872" /><rect x="338" y="154" width="18" height="16" rx="2" fill="#d79c4e" />
-      </g>
-      <g fill="#222"><circle cx="238" cy="262" r="9" /><circle cx="238" cy="262" r="3" fill="#f1e6d4" /></g>
-      <path d="M160 270 C 210 230, 250 240, 296 200" fill="none" stroke="#222" strokeWidth="3" strokeDasharray="6 7" strokeLinecap="round" />
-      <path d="M290 196 l12 3 -6 9z" fill="#222" />
-      <g transform="translate(400 60)"><rect width="56" height="56" rx="6" fill="#222" /><path d="M14 30 l10 10 18-22" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" /></g>
-    </svg>
-  )
-}
+const MINOR = Array.from({ length: 15 }, (_, i) => -160 + i * 62)
+const MAJOR = [-40, 210, 458, 706]
 
-export function CardArt({ kind }: { kind: 'board' | 'approve' | 'phone' }) {
+const PLACES: [number, number, string, 'l' | 'r'][] = [
+  [300, 372, 'Swargate Depot', 'r'],
+  [452, 318, 'Hadapsar', 'r'],
+  [150, 276, 'Kothrud Clinic', 'l'],
+  [206, 150, 'Aundh', 'r'],
+  [430, 132, 'Viman Nagar', 'r'],
+  [528, 196, 'Kharadi', 'l'],
+  [352, 262, 'Camp', 'r'],
+]
+
+const RESCUE = 'M430 132 L404 196 L452 318 L352 262 L236 300 L150 276'
+
+export function HeroMap() {
   return (
-    <svg viewBox="0 0 120 100" aria-hidden="true" className="cardart">
-      {kind === 'board' && (<g>
-        <rect x="8" y="14" width="104" height="72" rx="6" fill="#fff" />
-        <rect x="16" y="26" width="52" height="9" rx="3" fill="#2a6f7f" /><rect x="72" y="26" width="30" height="9" rx="3" fill="#e9b872" />
-        <rect x="16" y="44" width="30" height="9" rx="3" fill="#c4481a" /><rect x="50" y="44" width="52" height="9" rx="3" fill="#276ef1" />
-        <rect x="16" y="62" width="64" height="9" rx="3" fill="#2a6f7f" />
-        <path d="M60 18 V82" stroke="#222" strokeWidth="2" strokeDasharray="3 3" />
-      </g>)}
-      {kind === 'approve' && (<g>
-        <rect x="14" y="12" width="92" height="76" rx="6" fill="#fff" />
-        <circle cx="34" cy="34" r="9" fill="#e9b872" /><rect x="50" y="29" width="46" height="10" rx="3" fill="#ddd" />
-        <circle cx="34" cy="62" r="9" fill="#2a6f7f" /><rect x="50" y="57" width="30" height="10" rx="3" fill="#ddd" />
-        <path d="M84 62 l6 6 12-14" fill="none" stroke="#222" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-      </g>)}
-      {kind === 'phone' && (<g>
-        <rect x="34" y="6" width="52" height="88" rx="9" fill="#222" />
-        <rect x="39" y="16" width="42" height="68" rx="3" fill="#fff" />
-        <rect x="44" y="24" width="32" height="8" rx="2" fill="#ddd" /><rect x="44" y="38" width="32" height="8" rx="2" fill="#ddd" />
-        <rect x="44" y="56" width="32" height="12" rx="3" fill="#222" /><rect x="44" y="72" width="32" height="8" rx="3" fill="#276ef1" />
-      </g>)}
+    <svg viewBox="0 0 600 500" role="img" className="art" preserveAspectRatio="xMidYMid slice"
+      aria-label="A dark map of the demo delivery network. One van has broken down at Hadapsar and another drives over to collect its parcels and deliver them to Kothrud Clinic.">
+      <rect width="600" height="500" fill="#0c111b" />
+      <g transform="rotate(-17 300 250)">
+        <path d="M-80 420 C 120 380, 260 470, 420 430 S 640 360, 720 400" fill="none" stroke="#0a1a2c" strokeWidth="46" />
+        <path d="M-80 420 C 120 380, 260 470, 420 430 S 640 360, 720 400" fill="none" stroke="#0d2136" strokeWidth="1.5" />
+        {MINOR.map((v) => <line key={`h${v}`} x1="-200" x2="800" y1={v} y2={v} stroke="#161e2c" strokeWidth="2" />)}
+        {MINOR.map((v) => <line key={`v${v}`} y1="-200" y2="700" x1={v + 120} x2={v + 120} stroke="#161e2c" strokeWidth="2" />)}
+        {MAJOR.map((v) => <line key={`mh${v}`} x1="-200" x2="800" y1={v * 0.62 + 40} y2={v * 0.62 + 40} stroke="#1f2a3c" strokeWidth="7" />)}
+        {MAJOR.map((v) => <line key={`mv${v}`} y1="-200" y2="700" x1={v} x2={v} stroke="#1f2a3c" strokeWidth="7" />)}
+        <path d="M-120 60 C 140 120, 300 40, 760 180" fill="none" stroke="#243146" strokeWidth="10" />
+        <rect x="250" y="120" width="96" height="58" rx="6" fill="#0f1d1c" />
+        <rect x="520" y="300" width="70" height="92" rx="6" fill="#0f1d1c" />
+      </g>
+
+      {/* the other routes of the day, quiet */}
+      <g fill="none" stroke="#566171" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" opacity="0.9">
+        <path d="M300 372 L206 150" />
+        <path d="M300 372 L528 196" />
+        <path d="M300 372 L352 262 L430 132" strokeDasharray="2 7" />
+      </g>
+
+      {/* the rescue: from Viman Nagar to the broken-down van, then on to the clinic */}
+      <path d={RESCUE} fill="none" stroke="#9dcdd6" strokeWidth="9" opacity="0.14" strokeLinejoin="round" strokeLinecap="round" />
+      <path d={RESCUE} className="map-route" pathLength={1} fill="none" stroke="#9dcdd6" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+      <circle r="6" fill="#ffffff" className="map-van" style={{ offsetPath: `path('${RESCUE}')` }} />
+
+      {PLACES.map(([x, y, name, side]) => (
+        <g key={name}>
+          <circle cx={x} cy={y} r="4.5" fill="#0c111b" stroke="#a0aaba" strokeWidth="1.6" />
+          <text x={side === 'r' ? x + 10 : x - 10} y={y + 4} textAnchor={side === 'r' ? 'start' : 'end'} className="map-label">{name}</text>
+        </g>
+      ))}
+      <rect x="292" y="364" width="16" height="16" transform="rotate(45 300 372)" fill="#ffffff" />
+
+      {/* the breakdown */}
+      <g className="map-pulse"><circle cx="452" cy="318" r="15" fill="none" stroke="#ffffff" strokeWidth="1.5" /></g>
+      <circle cx="452" cy="318" r="9" fill="#ffffff" />
+      <path d="M448 314l8 8M456 314l-8 8" stroke="#0c111b" strokeWidth="2.2" strokeLinecap="round" />
+
+      {/* what the dispatcher reads */}
+      <g transform="translate(24 24)">
+        <rect width="252" height="92" rx="12" fill="#121927" stroke="#243146" />
+        <text x="16" y="28" className="map-card-k">Rescue committed</text>
+        <text x="16" y="52" className="map-card-v">D7 to Kothrud Clinic</text>
+        <text x="16" y="74" className="map-card-s">Due 15:00. Arrives 14:50 with Meera.</text>
+      </g>
     </svg>
   )
 }

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { HeroArt } from './Art'
+import { HeroMap } from './Art'
 import { SiteFoot, SiteNav } from './SiteChrome'
 
 const STEPS = [
@@ -22,7 +22,7 @@ export default function Landing() {
               <Link to="/dispatch" className="btn-black">Open the dispatcher</Link>
             </div>
           </div>
-          <div className="artpanel"><HeroArt /></div>
+          <div className="mapframe"><HeroMap /></div>
         </section>
 
         <section aria-labelledby="what-h">

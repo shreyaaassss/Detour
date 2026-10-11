@@ -436,3 +436,19 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--color-jet-blac
 .whylist { list-style: none; margin: 24px 0 0; padding: 16px 0 0; border-top: 1px solid var(--line-2); display: grid; gap: 10px; }
 .whylist li { display: grid; grid-template-columns: 92px 64px minmax(0, 1fr); gap: 12px; align-items: start; }
 .whylist .reason { max-width: 80ch; }
+
+/* the hero map: a dark render in a 24px frame whose lower edge dissolves into the page */
+.mapframe { position: relative; border-radius: 24px; overflow: hidden; aspect-ratio: 6 / 5; background: #0c111b; }
+.mapframe::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: 24px;
+  background: linear-gradient(to bottom, transparent 62%, rgba(255, 255, 255, 0.55) 84%, #ffffff 100%); }
+.map-label { font-family: var(--sans); font-size: 11.5px; fill: #a0aaba; }
+.map-card-k { font-family: var(--sans); font-size: 11px; fill: #a0aaba; }
+.map-card-v { font-family: var(--sans); font-size: 16px; fill: #ffffff; font-weight: 500; }
+.map-card-s { font-family: var(--sans); font-size: 12px; fill: #a0aaba; }
+.map-route { stroke-dasharray: 1; stroke-dashoffset: 1; animation: mapdraw 2.6s 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+@keyframes mapdraw { to { stroke-dashoffset: 0; } }
+.map-van { offset-distance: 0%; offset-rotate: 0deg; animation: mapgo 2.6s 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+@keyframes mapgo { to { offset-distance: 100%; } }
+.map-pulse circle { transform-origin: 452px 318px; animation: mappulse 2.2s ease-out infinite; }
+@keyframes mappulse { from { transform: scale(0.7); opacity: 0.9; } to { transform: scale(1.9); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .map-route { stroke-dashoffset: 0; } .map-van { offset-distance: 100%; } .map-pulse { display: none; } }
