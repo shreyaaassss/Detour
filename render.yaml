@@ -1,0 +1,14 @@
+# Render blueprint: the DeTour server. Deploy with New > Blueprint, pointing at this repository.
+services:
+  - type: web
+    name: detour-api
+    runtime: docker
+    plan: free
+    dockerContext: backend
+    dockerfilePath: backend/Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: DETOUR_LLM
+        value: "off"        # the rule reader alone is enough; set OPENAI_API_KEY and remove this to use the model too
+      - key: DETOUR_CALLS
+        value: "off"

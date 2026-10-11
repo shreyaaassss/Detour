@@ -35,8 +35,8 @@ export function driverOf(scenario: Scenario, vehicleId: string | null | undefine
   return v?.driver ? `${v.id} (${v.driver})` : (vehicleId ?? '')
 }
 
-// Colour-blind-safe line colours (Okabe-Ito, darkened for white backgrounds), one per vehicle.
-const LINE = ['#0067a3', '#c4510a', '#007a5a', '#9a4b82', '#8a6d00', '#3b4a63']
+// The interface is black and white, so vehicles are told apart by grey step and by the lane labels and selection.
+const LINE = ['#000000', '#767676', '#333333', '#afafaf', '#5e5e5e', '#4b4b4b']
 export function vehicleColor(scenario: Scenario, vehicleId: string): string {
   const i = scenario.vehicles.findIndex((v) => v.id === vehicleId)
   return LINE[(i < 0 ? 0 : i) % LINE.length]

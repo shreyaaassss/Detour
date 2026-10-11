@@ -1,5 +1,6 @@
 // Speaking and listening on the phone. The server's voice (ElevenLabs) comes first; the phone's own voice is the
 // fallback; and if neither works the message is still on the screen.
+import { API_BASE } from './config'
 import { useSyncExternalStore } from 'react'
 import type { Lang } from './i18n'
 
@@ -41,7 +42,7 @@ export function stopSpeaking(): void {
 }
 
 export function audioUrl(what: 'readback' | 'offer' | 'note', ref: string | number, lang: Lang): string {
-  return `/voice/audio?what=${what}&ref=${encodeURIComponent(String(ref))}&lang=${lang}`
+  return `${API_BASE}/voice/audio?what=${what}&ref=${encodeURIComponent(String(ref))}&lang=${lang}`
 }
 
 function playUrl(url: string): Promise<void> {

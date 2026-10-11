@@ -1,3 +1,4 @@
+import { API_BASE } from './config'
 // One shared event stream for every screen on the page.
 type Handler = (type: string, data: Record<string, unknown>) => void
 type Status = (connected: boolean) => void
@@ -15,7 +16,7 @@ function setConnected(v: boolean) {
 
 function open() {
   if (es) return
-  es = new EventSource('/events')
+  es = new EventSource(`${API_BASE}/events`)
   es.onopen = () => setConnected(true)
   es.onerror = () => setConnected(false) // the browser reconnects by itself
   for (const t of TYPES) {

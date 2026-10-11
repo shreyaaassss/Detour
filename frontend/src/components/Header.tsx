@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getActor, setActor } from '../api'
 import { hhmm } from '../format'
 import type { AppState } from '../types'
@@ -17,13 +18,13 @@ export function Header({ state, connected, onReset, onChecks, busy }: Props) {
   const report = state?.report
   return (
     <header className="topbar">
-      <div className="brand">
+      <Link to="/" className="brand" style={{ textDecoration: 'none' }} aria-label="DeTour home">
         <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M3 21h6a4 4 0 004-4V9a4 4 0 014-4h6" />
           <path d="M20 2l3 3-3 3" />
         </svg>
         DeTour
-      </div>
+      </Link>
       <div className="where">
         <strong>{state?.scenario.name ?? 'Loading'}</strong>
         <span>{state ? `${state.scenario.vehicles.length} vehicles, ${state.scenario.deliveries.length} deliveries` : ''}</span>
@@ -34,8 +35,8 @@ export function Header({ state, connected, onReset, onChecks, busy }: Props) {
       </div>
       <div className="spacer" />
       <nav className="row small" aria-label="Other screens">
-        <a href="/driver" target="_blank" rel="noreferrer">Driver app</a>
-        <a href="/head" target="_blank" rel="noreferrer">Head console</a>
+        <Link to="/driver">Driver app</Link>
+        <Link to="/head">Head console</Link>
       </nav>
       {report && (
         <button className={`chip ${report.valid ? 'ok' : 'bad'}`} onClick={onChecks}

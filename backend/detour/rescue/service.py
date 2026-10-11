@@ -54,6 +54,7 @@ class RescueService:
         self.incidents: dict[str, Incident] = {}
         self.offers: dict[str, Offer] = {}
         self.notes: list[Notification] = []
+        self._note_seq = 0  # ids keep rising across a reset, so a screen asking for 'newer than N' never misses one
         self._committing: set[str] = set()
         self.calls: Any = None  # the phone service, when real calls are set up
         self._n_inc = 0
@@ -83,8 +84,9 @@ class RescueService:
         self._publish("incident", id=inc.id, state=state)
 
     def notify(self, to: str, kind: str, text: dict[str, str], inc: Incident | None = None, **data: Any) -> None:
+        self._note_seq += 1
         n = Notification(
-            id=len(self.notes) + 1,
+            id=self._note_seq,
             to=to,
             kind=kind,
             incident_id=inc.id if inc else None,
@@ -629,6 +631,7 @@ class RescueService:
         if reason in ("scenario_loaded", "plan_built"):  # a fresh start: nothing from before can still be open
             self.incidents.clear()
             self.offers.clear()
+            self.notes.clear()
             self._committing.clear()
             return
         for inc in list(self.incidents.values()):

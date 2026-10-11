@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api, ApiError } from '../api'
+import { VOICE } from '../config'
 import { audioUrl, setSound, useSound } from '../audio'
 import { BrowserCall } from '../components/BrowserCall'
 import { Countdown } from '../components/Countdown'
@@ -63,9 +64,9 @@ export default function Driver() {
             <button key={l.id} aria-pressed={lang === l.id} onClick={() => chooseLang(l.id)}>{l.label}</button>
           ))}
         </div>
-        <button className="btn quiet" aria-pressed={sound} onClick={() => setSound(!sound)} title={sound ? ui('soundOn', lang) : ui('soundOff', lang)}>
+        {VOICE && <button className="btn quiet" aria-pressed={sound} onClick={() => setSound(!sound)} title={sound ? ui('soundOn', lang) : ui('soundOff', lang)}>
           {sound ? '🔊' : '🔇'}
-        </button>
+        </button>}
         <span className="live" role="status" title={connected ? 'Live' : 'Reconnecting'}><span className={`dot ${connected ? 'on' : ''}`} /></span>
       </header>
 

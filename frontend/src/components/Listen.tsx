@@ -1,10 +1,11 @@
+import { VOICE } from '../config'
 import { useEffect, useState } from 'react'
 import { say, sayNow, soundOn, stopSpeaking } from '../audio'
 import { ui, type Lang } from '../i18n'
 import { Glyph } from './ui'
 
 /** Speaks `text` when it first appears (if sound is on), stops if it goes away, and offers a button to hear it again. */
-export function Listen({ id, url, text, lang, auto = true }: { id: string; url: string; text: string; lang: Lang; auto?: boolean }) {
+function ListenInner({ id, url, text, lang, auto = true }: { id: string; url: string; text: string; lang: Lang; auto?: boolean }) {
   const [playing, setPlaying] = useState(false)
 
   useEffect(() => {
@@ -23,4 +24,8 @@ export function Listen({ id, url, text, lang, auto = true }: { id: string; url: 
       <Glyph name="urgent" size={14} />{ui('listen', lang)}
     </button>
   )
+}
+
+export function Listen(props: Parameters<typeof ListenInner>[0]) {
+  return VOICE ? <ListenInner {...props} /> : null
 }

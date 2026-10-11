@@ -1,9 +1,10 @@
+import { VOICE } from '../config'
 import { useCallback, useEffect, useState } from 'react'
 import { api, ApiError } from '../api'
 import type { VoiceStatus } from '../types'
 
 /** Is the voice on, what has it cost, and a button to prepare the demo's lines ahead of time. */
-export function VoiceSection() {
+function VoiceSectionInner() {
   const [st, setSt] = useState<VoiceStatus | null>(null)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
@@ -57,4 +58,8 @@ export function VoiceSection() {
       {msg && <p className={`notice ${msg.ok ? 'ok' : 'warn'} small`} role="status" style={{ marginTop: 8 }}>{msg.text}</p>}
     </section>
   )
+}
+
+export function VoiceSection() {
+  return VOICE ? <VoiceSectionInner /> : null
 }

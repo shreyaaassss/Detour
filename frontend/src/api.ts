@@ -4,6 +4,8 @@ import type {
   BrowserSession, Proposal, Report, RescueOverview, TelephonyStatus, VoiceStatus,
 } from './types'
 
+import { API_BASE } from './config'
+
 const ACTOR_KEY = 'detour.actor'
 
 export function getActor(): string {
@@ -26,7 +28,7 @@ export class ApiError extends Error {
 }
 
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(path, {
+  const res = await fetch(API_BASE + path, {
     method,
     headers: { 'Content-Type': 'application/json', 'X-Actor': getActor() },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -69,7 +71,7 @@ export const api = {
   voiceStatus: () => call<VoiceStatus>('GET', '/voice/status'),
   warmVoice: () => call<{ lines: number; generated: number; already_cached: number; characters: number; problems: string[] }>('POST', '/voice/warm'),
   voiceReport: async (driver: string, language: string, audio: Blob) => {
-    const res = await fetch(`/incidents/voice?driver=${encodeURIComponent(driver)}&language=${language}`, {
+    const res = await fetch(`${API_BASE}/incidents/voice?driver=${encodeURIComponent(driver)}&language=${language}`, {
       method: 'POST', headers: { 'Content-Type': audio.type || 'audio/webm', 'X-Actor': getActor() }, body: audio,
     })
     const data = await res.json().catch(() => null)

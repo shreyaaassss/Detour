@@ -478,3 +478,15 @@ def test_events_stream_carries_incident_and_notification_updates(rig):
     while not q.empty():
         kinds.add(q.get_nowait()["type"])
     assert {"incident", "notify", "audit"} <= kinds
+
+
+def test_reset_clears_old_updates_and_ids_keep_rising(tmp_path):
+    rig = Rig(tmp_path)
+    rig.to_head()
+    before = rig.notes("driver:Ravi")
+    assert before
+    last = max(n["id"] for n in before)
+    rig.c.post("/reset")
+    assert rig.notes("driver:Ravi") == [] and rig.c.get("/incidents").json()["incidents"] == []
+    rig.to_head()
+    assert min(n["id"] for n in rig.notes("driver:Ravi")) > last  # a screen asking for "newer than N" misses nothing

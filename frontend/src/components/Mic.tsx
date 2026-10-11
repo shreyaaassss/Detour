@@ -1,3 +1,4 @@
+import { VOICE } from '../config'
 import { useEffect, useRef, useState } from 'react'
 import { api, ApiError } from '../api'
 import { micSupport, startRecording, unlockAudio, type Recording } from '../audio'
@@ -10,7 +11,7 @@ const MAX_SECONDS = 20
 type Phase = 'idle' | 'recording' | 'sending'
 
 /** Tap, say what happened, tap again. The server's speech-to-text is tried first, the browser's is the backup. */
-export function Mic({ driver, lang, serverStt, onReported }: {
+function MicInner({ driver, lang, serverStt, onReported }: {
   driver: string; lang: Lang; serverStt: boolean | null; onReported: (i: Incident) => void
 }) {
   const [phase, setPhase] = useState<Phase>('idle')
@@ -81,4 +82,8 @@ export function Mic({ driver, lang, serverStt, onReported }: {
       {note && <p className="notice warn small" role="alert" style={{ marginTop: 8 }}>{note}</p>}
     </div>
   )
+}
+
+export function Mic(props: Parameters<typeof MicInner>[0]) {
+  return VOICE ? <MicInner {...props} /> : null
 }

@@ -1,3 +1,4 @@
+import { VOICE } from '../config'
 import { useEffect, useRef, useState } from 'react'
 import { api, ApiError } from '../api'
 import { ui, type Lang } from '../i18n'
@@ -11,7 +12,7 @@ interface Session { sendUserMessage: (t: string) => void; endSession: () => Prom
 /** Plan B for the phone line: the same call agent, spoken to through this phone's microphone and speaker.
  * Browsers cannot send real keypad tones, so 1 and 2 are on-screen buttons that send the same "1" / "2" the agent
  * expects from a keypad. The outcome reaches the app through the server, exactly as a phone call's would. */
-export function BrowserCall({ offer, lang }: { offer: Offer; lang: Lang }) {
+function BrowserCallInner({ offer, lang }: { offer: Offer; lang: Lang }) {
   const [phase, setPhase] = useState<Phase>('idle')
   const [mode, setMode] = useState<Mode>('speaking')
   const [err, setErr] = useState<string | null>(null)
@@ -67,4 +68,8 @@ export function BrowserCall({ offer, lang }: { offer: Offer; lang: Lang }) {
       {err && <p className="error" role="alert">{err}</p>}
     </div>
   )
+}
+
+export function BrowserCall(props: Parameters<typeof BrowserCallInner>[0]) {
+  return VOICE ? <BrowserCallInner {...props} /> : null
 }

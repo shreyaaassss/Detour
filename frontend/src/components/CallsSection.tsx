@@ -1,3 +1,4 @@
+import { VOICE } from '../config'
 import { useCallback, useEffect, useState } from 'react'
 import { api, ApiError } from '../api'
 import type { TelephonyStatus } from '../types'
@@ -5,7 +6,7 @@ import type { TelephonyStatus } from '../types'
 const LANG: Record<string, string> = { hi: 'Hindi', mr: 'Marathi', en: 'English', driver: "each driver's own language" }
 
 /** Is the phone line ready, to whom would it ring, and a button to test it before the demo. */
-export function CallsSection() {
+function CallsSectionInner() {
   const [st, setSt] = useState<TelephonyStatus | null>(null)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
@@ -65,4 +66,8 @@ export function CallsSection() {
       )}
     </section>
   )
+}
+
+export function CallsSection() {
+  return VOICE ? <CallsSectionInner /> : null
 }
