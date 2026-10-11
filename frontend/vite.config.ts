@@ -7,12 +7,16 @@ const api = [
   'incidents', 'offers', 'telephony', 'clock', 'notifications', 'messages', 'interpreter', 'voice',
 ]
 
+const proxy = Object.fromEntries(api.map((p) => [`/${p}`, { target: backend, changeOrigin: true }]))
+
 export default defineConfig({
   plugins: [react()],
   server: {
     host: true,
     allowedHosts: true, // dev only: lets a tunnel such as cloudflared reach the dev server by its own hostname
-    proxy: Object.fromEntries(api.map((p) => [`/${p}`, { target: backend, changeOrigin: true }])),
+    proxy,
   },
+  // `npm run build && npm run preview`: one small bundle, much faster through a tunnel than the dev server
+  preview: { host: true, allowedHosts: true, proxy },
   test: { environment: 'node' },
 })
